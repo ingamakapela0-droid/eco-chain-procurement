@@ -159,21 +159,18 @@ elif page == "💰 Finance & Escrow":
             tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data, 'value': hex(wei_val)}
             streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
 
-# --- 9. PAGE: MANAGEMENT (CEO) ---
-elif page == "🔑 Management (CEO)":
-    st.header("🔑 Inventory Management")
-    with st.form(key="admin_form"):
-        m_name = st.text_input("Product Name")
-        col_a, col_b = st.columns(2)
-        m_stock = col_a.number_input("Starting Stock", min_value=0)
-        m_thresh = col_b.number_input("Reorder Level", min_value=1)
-        m_qty = col_a.number_input("Order Qty", min_value=1)
-        m_price = col_b.number_input("Price (ETH)", min_value=0.0, format="%.6f")
-        m_supp = st.text_input("Supplier Wallet")
-        
-        if st.form_submit_button("Register Product"):
+if submitted and user_address:
             try:
-                data = contract.encodeABI(fn_name="addMedication", args=[m_name, int(m_stock), int(m_thresh), int(m_qty), w3.to_wei(m_price, 'ether'), w3.to_checksum_address(m_supp)])
+                # FIXED: Calling encode_abi directly from the specific function
+                data = contract.functions.addMedication(
+                    m_name, 
+                    int(m_stock), 
+                    int(m_thresh), 
+                    int(m_qty), 
+                    w3.to_wei(m_price, 'ether'), 
+                    w3.to_checksum_address(m_supp)
+                ).build_transaction({'gas': 200000})['data'] # We just need the hex data for MetaMask
+                
                 tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
                 streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
             except Exception as e:
