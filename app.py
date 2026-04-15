@@ -31,15 +31,12 @@ contract = w3.eth.contract(address=config.CONTRACT_ADDRESS, abi=config.CONTRACT_
 # --- 3. HEADER LOGIC ---
 def render_header():
     col_logo, col_text = st.columns([1, 4])
-    
     if os.path.exists("logo.png"):
         with col_logo:
             st.image("logo.png", width=120)
-    
     with col_text:
         st.title(config.APP_NAME)
         st.caption(f"🚀 **{config.TAGLINE}**")
-    
     st.info(config.DESCRIPTION)
 
 render_header()
@@ -69,8 +66,7 @@ page = st.sidebar.radio("Navigation", [
 
 # --- 5. PAGE: HOSPITAL OVERVIEW ---
 if page == "📊 Hospital Overview":
-    st.subheader("📊 Real-Time Operations Command Center")
-    
+    st.subheader("📊 Operations Command Center")
     col1, col2, col3 = st.columns(3)
     try:
         escrow_bal = w3.from_wei(contract.functions.getContractBalance().call(), 'ether')
@@ -79,103 +75,66 @@ if page == "📊 Hospital Overview":
     except:
         escrow_bal, orders_total, user_bal_eth = 0, 0, 0
 
-    col1.metric("My Wallet Balance", f"{round(user_bal_eth, 4)} ETH")
-    col2.metric("Contract Escrow", f"{escrow_bal} ETH")
+    col1.metric("My Wallet", f"{round(user_bal_eth, 4)} ETH")
+    col2.metric("Escrow Funds", f"{escrow_bal} ETH")
     col3.metric("Total Orders", orders_total)
 
-    st.divider()
-
-    with st.expander("ℹ️ About the Eco-Chain Procurement Solution"):
-        st.write("""
-            **Eco-Chain Procurement Solutions** aims to provide a solution to the abrupt 
-            shortage of medication at local clinics and rural hospitals. 
-            
-            Using Ethereum Smart Contracts, we ensure:
-            - **Trustless Escrow:** Payments are locked until receipt is verified.
-            - **Transparency:** All stakeholders see the same data in real-time.
-            - **Security:** Immutable records prevent procurement fraud.
-        """)
-
-# --- 6. PAGE: CLINIC HEALTH INSIGHTS (NEW) ---
+# --- 6. PAGE: CLINIC HEALTH INSIGHTS ---
 elif page == "📈 Clinic Health Insights":
-    st.header("📈 Clinic Health & Chronic Disease Insights")
-    st.info("This data helps predict medication demand based on local patient demographics.")
-
+    st.header("📈 Disease Insights")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Total Patients", "1,240", "+12% MoM")
-    c2.metric("Chronic Cases", "450", "Active")
-    c3.metric("High-Risk Areas", "3", "Rural Zones")
-
-    st.divider()
-    st.subheader("Chronic Disease Distribution")
-    
-    disease_data = {
-        "Hypertension": 150,
-        "Diabetes (Type 2)": 120,
-        "HIV/AIDS": 95,
-        "Asthma": 60,
-        "Tuberculosis": 25
-    }
-    st.bar_chart(disease_data)
-
-    with st.form(key="stats_form"):
-        st.write("### Update Local Clinic Stats")
-        col_in1, col_in2 = st.columns(2)
-        new_disease = col_in1.selectbox("Disease Category", ["Hypertension", "Diabetes", "HIV/AIDS", "Asthma", "TB"])
-        new_count = col_in2.number_input("New Patient Count", min_value=0)
-        if st.form_submit_button("Submit Monthly Data"):
-            st.toast(f"Updated data for {new_disease} recorded.")
+    c1.metric("Total Patients", "1,240")
+    c2.metric("Chronic Cases", "450")
+    c3.metric("Rural Zones", "3")
+    st.bar_chart({"Hypertension": 150, "Diabetes": 120, "HIV/AIDS": 95, "Asthma": 60, "TB": 25})
 
 # --- 7. PAGE: DISPENSARY (STAFF) ---
 elif page == "🏥 Dispensary (Staff)":
     st.header("🏥 Staff Portal")
     t1, t2 = st.tabs(["Log Usage", "Verify Delivery"])
-    
     with t1:
         with st.form(key="usage_form"):
-            med_name = st.text_input("Medication Name")
+            m_name = st.text_input("Medication Name")
             if st.form_submit_button("Log Usage") and user_address:
-                data = contract.encodeABI(fn_name="issueMedication", args=[med_name])
+                data = contract.functions.issueMedication(m_name).build_transaction({'gas': 100000, 'nonce': 0})['data']
                 tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
                 streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
-
     with t2:
-        with st.form(key="delivery_form"):
-            order_id = st.number_input("Order ID", min_value=1, step=1)
-            if st.form_submit_button("Confirm Receipt & Release Funds") and user_address:
-                data = contract.encodeABI(fn_name="verifyDelivery", args=[int(order_id)])
+        with st.form(key="deliv_form"):
+            o_id = st.number_input("Order ID", min_value=1)
+            if st.form_submit_button("Confirm Receipt") and user_address:
+                data = contract.functions.verifyDelivery(int(o_id)).build_transaction({'gas': 100000, 'nonce': 0})['data']
                 tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
                 streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
 
 # --- 8. PAGE: FINANCE & ESCROW ---
 elif page == "💰 Finance & Escrow":
-    st.header("💰 Financial Operations")
-    with st.form(key="finance_form"):
-        o_id = st.number_input("Order ID", min_value=1, step=1)
-        eth_val = st.number_input("Amount (ETH)", min_value=0.0, format="%.6f")
-        if st.form_submit_button("Deposit into Escrow") and user_address:
-            wei_val = w3.to_wei(eth_val, 'ether')
-            data = contract.encodeABI(fn_name="depositEscrow", args=[int(o_id)])
-            tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data, 'value': hex(wei_val)}
+    st.header("💰 Finance")
+    with st.form(key="fin_form"):
+        fid = st.number_input("Order ID", min_value=1)
+        fval = st.number_input("ETH Amount", min_value=0.0, format="%.6f")
+        if st.form_submit_button("Fund Escrow") and user_address:
+            data = contract.functions.depositEscrow(int(fid)).build_transaction({'gas': 100000, 'nonce': 0, 'value': w3.to_wei(fval, 'ether')})['data']
+            tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data, 'value': hex(w3.to_wei(fval, 'ether'))}
             streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
 
-if submitted and user_address:
+# --- 9. PAGE: MANAGEMENT (CEO) ---
+elif page == "🔑 Management (CEO)":
+    st.header("🔑 CEO Inventory")
+    with st.form(key="ceo_form"):
+        name = st.text_input("Product Name")
+        stock = st.number_input("Stock", min_value=0)
+        thresh = st.number_input("Threshold", min_value=1)
+        qty = st.number_input("Reorder Qty", min_value=1)
+        price = st.number_input("Price (ETH)", min_value=0.0, format="%.6f")
+        supp = st.text_input("Supplier Wallet")
+        if st.form_submit_button("Register Product") and user_address:
             try:
-                # FIXED: Calling encode_abi directly from the specific function
-                data = contract.functions.addMedication(
-                    m_name, 
-                    int(m_stock), 
-                    int(m_thresh), 
-                    int(m_qty), 
-                    w3.to_wei(m_price, 'ether'), 
-                    w3.to_checksum_address(m_supp)
-                ).build_transaction({'gas': 200000})['data'] # We just need the hex data for MetaMask
-                
+                data = contract.functions.addMedication(name, int(stock), int(thresh), int(qty), w3.to_wei(price, 'ether'), w3.to_checksum_address(supp)).build_transaction({'gas': 250000, 'nonce': 0})['data']
                 tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
                 streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# --- FOOTER ---
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain Procurement | v2.2")
+st.sidebar.caption("Eco-Chain Procurement | v2.3")
