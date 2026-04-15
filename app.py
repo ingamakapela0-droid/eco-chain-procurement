@@ -35,6 +35,12 @@ contract = w3.eth.contract(address=config.CONTRACT_ADDRESS, abi=config.CONTRACT_
 # --- 3. HEADER LOGIC ---
 def render_header():
     col_logo, col_text = st.columns([1, 4])
+    
+    # This checks if the file exists on GitHub before trying to show it
+    if os.path.exists("logo.png"):
+        with col_logo:
+            st.image("logo.png", width=120)
+    
     with col_text:
         st.title(config.APP_NAME)
         st.caption(f"🚀 **{config.TAGLINE}**")
