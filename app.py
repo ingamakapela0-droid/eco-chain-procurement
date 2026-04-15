@@ -51,6 +51,7 @@ def render_header():
 render_header()
 
 # --- 4. SIDEBAR & WALLET ---
+page = st.sidebar.radio("Navigation", ["📊 Hospital Overview", "📊 Clinic Health Insights", "🏥 Dispensary (Staff)", "💰 Finance & Escrow", "🔑 Management (CEO)"])
 st.sidebar.header("🔐 Wallet Access")
 user_address = streamlit_js_eval(js_expressions="window.ethereum ? window.ethereum.selectedAddress : null", key="wallet_check")
 
@@ -112,6 +113,51 @@ if page == "📊 Hospital Overview":
         """)
 
 # --- 6. PAGE: DISPENSARY (STAFF) ---
+# --- NEW PAGE: CLINIC HEALTH INSIGHTS ---
+elif page == "📊 Clinic Health Insights":
+    st.header("📊 Clinic Health & Chronic Disease Insights")
+    st.info("This data helps predict medication demand based on local patient demographics.")
+
+    # Top level stats
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total Registered Patients", "1,240", "+12% MoM")
+    c2.metric("Chronic Cases Tracked", "450", "Active")
+    c3.metric("High-Risk Areas", "3", "Rural Zones")
+
+    st.divider()
+
+    # Chronic Disease Data Visualization
+    st.subheader("Chronic Disease Distribution")
+    
+    # We can create a simple dictionary of data for the chart
+    disease_data = {
+        "Hypertension": 150,
+        "Diabetes (Type 2)": 120,
+        "HIV/AIDS": 95,
+        "Asthma": 60,
+        "Tuberculosis": 25
+    }
+    
+    # Display as a bar chart
+    st.bar_chart(disease_data)
+
+    # Detailed Information Expander
+    with st.expander("📝 Regional Health Breakdown"):
+        st.write("""
+            **Observation:** There is a significant 15% rise in Diabetes cases in the Northern District.
+            **Procurement Action:** We recommend increasing the 'Insulin' reorder quantity by 20% 
+            for the next cycle to prevent stock-outs.
+        """)
+    
+    # Input form for Clinic Staff to update stats
+    with st.form("stats_update"):
+        st.write("### Update Local Clinic Stats")
+        col_in1, col_in2 = st.columns(2)
+        new_disease = col_in1.selectbox("Disease Category", ["Hypertension", "Diabetes", "HIV/AIDS", "Asthma", "TB"])
+        new_count = col_in2.number_input("New Patient Count", min_value=0)
+        
+        if st.form_submit_button("Submit Monthly Data"):
+            st.toast(f"Data for {new_disease} has been recorded locally!")
 elif page == "🏥 Dispensary (Staff)":
     st.header("🏥 Staff Portal")
     tab1, tab2 = st.tabs(["Issue Medication", "Verify Delivery"])
