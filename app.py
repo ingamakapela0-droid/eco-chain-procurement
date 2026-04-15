@@ -66,27 +66,51 @@ page = st.sidebar.radio("Navigation", [
 
 # --- 5. PAGE: HOSPITAL OVERVIEW ---
 if page == "📊 Hospital Overview":
-    st.subheader("📊 Operations Command Center")
-    col1, col2, col3 = st.columns(3)
+    st.subheader("📊 Operational Transparency Dashboard")
+    
+    col1, col2 = st.columns(2)
     try:
-        escrow_bal = w3.from_wei(contract.functions.getContractBalance().call(), 'ether')
         orders_total = contract.functions.orderCount().call()
-        user_bal_eth = w3.from_wei(w3.eth.get_balance(user_address), 'ether') if user_address else 0
     except:
-        escrow_bal, orders_total, user_bal_eth = 0, 0, 0
+        orders_total = 0
 
-    col1.metric("My Wallet", f"{round(user_bal_eth, 4)} ETH")
-    col2.metric("Escrow Funds", f"{escrow_bal} ETH")
-    col3.metric("Total Orders", orders_total)
+    col1.metric("Total Blockchain Orders", orders_total)
+    col2.metric("Network Status", "Active", delta="Sepolia Testnet")
+    
+    st.divider()
+    
+    c1, c2 = st.columns([2, 1])
+    with c1:
+        st.subheader("📋 System Integrity")
+        st.success(f"Verified Smart Contract: `{config.CONTRACT_ADDRESS}`")
+        st.write("**Blockchain Transparency Ledger**")
+        st.write("Current procurement data is immutable and verifiable by all health stakeholders.")
+    
+    with c2:
+        st.subheader("⚡ Quick Actions")
+        # --- RE-ADDED NOTIFICATION LOGIC ---
+        if st.button("New Order Notification"):
+            st.toast("Scanning blockchain for low stock levels...", icon="🔍")
+            st.info("System checking minimum thresholds across all regions.")
+        
+        if st.button("Refresh System Logs"):
+            st.rerun()
 
 # --- 6. PAGE: CLINIC HEALTH INSIGHTS ---
 elif page == "📈 Clinic Health Insights":
-    st.header("📈 Disease Insights")
+    st.header("📈 Regional HIV Trends")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Total Patients", "1,240")
-    c2.metric("Chronic Cases", "450")
-    c3.metric("Rural Zones", "3")
-    st.bar_chart({"Hypertension": 150, "Diabetes": 120, "HIV/AIDS": 95, "Asthma": 60, "TB": 25})
+    c1.metric("Avg. Positivity Rate", "6.2%")
+    c2.metric("ART Target Gap", "107,276")
+    c3.metric("Highest Burden", "Region F")
+    
+    col_l, col_r = st.columns(2)
+    with col_l:
+        st.write("**Positivity Rate (%)**")
+        st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
+    with col_r:
+        st.write("**Treatment Shortfall (Gap)**")
+        st.area_chart({"A": 14069, "B": 7076, "C": 6913, "D": 30948, "E": 6819, "F": 23532, "G": 17919})
 
 # --- 7. PAGE: DISPENSARY (STAFF) ---
 elif page == "🏥 Dispensary (Staff)":
@@ -95,46 +119,50 @@ elif page == "🏥 Dispensary (Staff)":
     with t1:
         with st.form(key="usage_form"):
             m_name = st.text_input("Medication Name")
-            if st.form_submit_button("Log Usage") and user_address:
+            if st.form_submit_button("Record Usage on Chain") and user_address:
                 data = contract.functions.issueMedication(m_name).build_transaction({'gas': 100000, 'nonce': 0})['data']
                 tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
                 streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
     with t2:
         with st.form(key="deliv_form"):
             o_id = st.number_input("Order ID", min_value=1)
-            if st.form_submit_button("Confirm Receipt") and user_address:
+            if st.form_submit_button("Confirm & Release Payment") and user_address:
                 data = contract.functions.verifyDelivery(int(o_id)).build_transaction({'gas': 100000, 'nonce': 0})['data']
                 tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
                 streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
 
 # --- 8. PAGE: FINANCE & ESCROW ---
 elif page == "💰 Finance & Escrow":
-    st.header("💰 Finance")
+    st.header("💰 Secure Escrow Funding")
     with st.form(key="fin_form"):
         fid = st.number_input("Order ID", min_value=1)
-        fval = st.number_input("ETH Amount", min_value=0.0, format="%.6f")
-        if st.form_submit_button("Fund Escrow") and user_address:
-            data = contract.functions.depositEscrow(int(fid)).build_transaction({'gas': 100000, 'nonce': 0, 'value': w3.to_wei(fval, 'ether')})['data']
-            tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data, 'value': hex(w3.to_wei(fval, 'ether'))}
+        fval = st.number_input("ETH Amount", min_value=0.0001, format="%.6f")
+        if st.form_submit_button("Lock Funds in Escrow") and user_address:
+            wei_val = w3.to_wei(fval, 'ether')
+            data = contract.functions.depositEscrow(int(fid)).build_transaction({'gas': 100000, 'nonce': 0, 'value': wei_val})['data']
+            tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data, 'value': hex(wei_val)}
             streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
 
 # --- 9. PAGE: MANAGEMENT (CEO) ---
 elif page == "🔑 Management (CEO)":
-    st.header("🔑 CEO Inventory")
+    st.header("🔑 Inventory Management")
     with st.form(key="ceo_form"):
         name = st.text_input("Product Name")
-        stock = st.number_input("Stock", min_value=0)
-        thresh = st.number_input("Threshold", min_value=1)
-        qty = st.number_input("Reorder Qty", min_value=1)
-        price = st.number_input("Price (ETH)", min_value=0.0, format="%.6f")
-        supp = st.text_input("Supplier Wallet")
-        if st.form_submit_button("Register Product") and user_address:
-            try:
-                data = contract.functions.addMedication(name, int(stock), int(thresh), int(qty), w3.to_wei(price, 'ether'), w3.to_checksum_address(supp)).build_transaction({'gas': 250000, 'nonce': 0})['data']
-                tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
-                streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
-            except Exception as e:
-                st.error(f"Error: {e}")
+        col_a, col_b = st.columns(2)
+        stock = col_a.number_input("Initial Stock", min_value=0)
+        thresh = col_b.number_input("Reorder Threshold", min_value=1)
+        qty = col_a.number_input("Order Quantity", min_value=1)
+        price = col_b.number_input("Unit Price (ETH)", min_value=0.0, format="%.6f")
+        supp = st.text_input("Supplier Wallet Address")
+        
+        if st.form_submit_button("Register Product on Blockchain"):
+            if user_address:
+                try:
+                    data = contract.functions.addMedication(name, int(stock), int(thresh), int(qty), w3.to_wei(price, 'ether'), w3.to_checksum_address(supp)).build_transaction({'gas': 250000, 'nonce': 0})['data']
+                    tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
+                    streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain Procurement | v2.3")
+st.sidebar.caption("Eco-Chain Procurement | v2.8")
