@@ -103,7 +103,7 @@ if "Hospital Overview" in page:
             st.rerun()
 
     with st.expander("ℹ️ About the Eco-Chain Procurement Solution"):
-        st.write("""
+        st.write(""" Eco-Chain Procurement Solutions aims to provide a solution to the abrupt shortage of medication at local clinics and rural hospitals and clinics. We will be the bridge between the hospital and pharmaceutical companies.
            . Using Ethereum Smart Contracts, we ensure:
             - **Trustless Escrow:** Payments are locked until receipt is verified.
             - **Transparency:** All stakeholders see the same inventory data in real-time.
