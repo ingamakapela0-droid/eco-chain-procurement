@@ -24,14 +24,6 @@ st.markdown("""
         color: white;
         border-radius: 8px;
     }
-    .role-badge {
-        padding: 5px 15px;
-        border-radius: 20px;
-        background-color: #E2E8F0;
-        color: #475569;
-        font-weight: bold;
-        font-size: 14px;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -39,11 +31,13 @@ st.markdown("""
 w3 = Web3(Web3.HTTPProvider(config.RPC_URL))
 contract = w3.eth.contract(address=config.CONTRACT_ADDRESS, abi=config.CONTRACT_ABI)
 
-# --- 3. SIDEBAR: WALLET & PROFILES ---
-st.sidebar.image("https://img.icons8.com/fluency/96/blockchain.png", width=80)
+# --- 3. SIDEBAR: LOGO & PROFILES ---
+# UPDATED: Points to your local file and removes "B" logo
+if os.path.exists("logo.png"):
+    st.sidebar.image("logo.png", width=120)
+
 st.sidebar.title("Eco-Chain")
 
-# Wallet Connection
 user_address = streamlit_js_eval(js_expressions="window.ethereum ? window.ethereum.selectedAddress : null", key="wallet_check")
 if not user_address:
     if st.sidebar.button("🔐 Connect MetaMask"):
@@ -52,18 +46,15 @@ else:
     st.sidebar.success(f"Connected: {user_address[:6]}...{user_address[-4:]}")
 
 st.sidebar.divider()
-
-# USER PROFILES (Role-Based Access Control)
-st.sidebar.subheader("👤 User Profile")
 user_role = st.sidebar.selectbox("Access Level:", ["Management (CEO)", "Finance Dept", "Dispensary Staff"])
-st.sidebar.markdown(f"Current Role: <span class='role-badge'>{user_role}</span>", unsafe_allow_html=True)
 
 st.sidebar.divider()
+# UPDATED: Removed the word "Ledger"
 page = st.sidebar.radio("Navigation", [
     "🏠 Dashboard", 
     "💊 Medication Registry", 
     "📈 Clinic Health Insights",
-    "📜 Transaction Ledger",
+    "📜 Transaction Records",
     "🏥 Hospital Management",
     "🚨 Alerts"
 ])
@@ -71,9 +62,8 @@ page = st.sidebar.radio("Navigation", [
 # --- 4. PAGE: DASHBOARD ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain Dashboard")
-    st.info(f"Logged in as **{user_role}**. Accessing regional procurement data for Gauteng.")
+    st.info(f"Role: **{user_role}** | Location: Gauteng Province")
     
-    # Restored About
     with st.expander("ℹ️ About Eco-Chain Procurement", expanded=False):
         st.write("Eco-Chain uses Ethereum Smart Contracts to automate medical procurement and prevent stockouts in public health facilities.")
 
@@ -81,58 +71,42 @@ if page == "🏠 Dashboard":
     c1.metric("Registered Meds", "142", "Gauteng")
     c2.metric("Procurement Txns", "1,024", "On-Chain")
     c3.metric("Critical Alerts", "5", "Low Stock")
-    c4.metric("Role Status", "Verified", user_role)
+    c4.metric("Network Status", "Online", "Sepolia")
 
     st.divider()
     col_l, col_r = st.columns([2, 1])
     with col_l:
-        st.subheader("📊 Stock Distribution")
+        st.subheader("📊 Regional Stock Distribution")
         st.bar_chart({"A": 80, "B": 70, "C": 45, "D": 30, "E": 85, "F": 20, "G": 55})
     with col_r:
         st.subheader("⚡ Quick Actions")
         if st.button("🔔 Trigger Stock Scan"):
-            st.toast("Scanning thresholds...")
+            st.toast("Scanning blockchain thresholds...")
 
-# --- 5. PAGE: MEDICATION REGISTRY (Add & Edit) ---
+# --- 5. PAGE: MEDICATION REGISTRY ---
 elif page == "💊 Medication Registry":
     st.title("📝 Inventory Management")
-    
-    # Role Protection
     if user_role != "Management (CEO)":
-        st.warning("⚠️ Access Denied. Only Management (CEO) can add or edit medication data.")
+        st.warning("⚠️ Access Denied. Only Management can edit records.")
     else:
-        tab1, tab2 = st.tabs(["➕ Add New Medication", "✏️ Edit Existing Medication"])
-        
+        tab1, tab2 = st.tabs(["➕ Add New Medication", "✏️ Edit Medication"])
         with tab1:
             with st.form("add_med"):
-                col1, col2 = st.columns(2)
-                name = col1.text_input("Product Name")
-                stock = col2.number_input("Initial Stock", min_value=0)
-                thresh = col1.number_input("Reorder Threshold", min_value=1)
-                qty = col2.number_input("Order Quantity", min_value=1)
-                price = col1.number_input("Price (ETH)", format="%.6f")
-                supp = col2.text_input("Supplier Wallet Address")
-                
+                name = st.text_input("Product Name")
+                stock = st.number_input("Initial Stock", min_value=0)
+                thresh = st.number_input("Reorder Threshold", min_value=1)
+                qty = st.number_input("Order Quantity", min_value=1)
+                price = st.number_input("Price (ETH)", format="%.6f")
+                supp = st.text_input("Supplier Wallet")
                 if st.form_submit_button("Register on Blockchain"):
                     try:
                         data = contract.functions.addMedication(name, int(stock), int(thresh), int(qty), w3.to_wei(price, 'ether'), w3.to_checksum_address(supp)).build_transaction({'gas': 250000, 'nonce': 0})['data']
                         tx = {'from': user_address, 'to': config.CONTRACT_ADDRESS, 'data': data}
                         streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx}] }})")
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-
+                    except Exception as e: st.error(f"Error: {e}")
         with tab2:
-            st.subheader("Edit/Update Parameters")
-            # In a full app, you would fetch names from the contract. Here we use a manual selector.
-            target_med = st.selectbox("Select Medication to Update:", ["Tenofovir", "Insulin", "Amoxicillin"])
-            with st.form("edit_med"):
-                st.info(f"Updating: {target_med}")
-                new_stock = st.number_input("Update Physical Stock", min_value=0)
-                new_thresh = st.number_input("Adjust Threshold", min_value=0)
-                
-                if st.form_submit_button("Update Records"):
-                    # This would call an 'update' function in your smart contract
-                    st.success(f"Transaction prepared for {target_med}. Please confirm in MetaMask.")
+            st.selectbox("Select Medication to Edit:", ["Tenofovir", "Insulin", "Amoxicillin"])
+            st.info("Parameter updates will be recorded as new blockchain transactions.")
 
 # --- 6. PAGE: CLINIC HEALTH INSIGHTS ---
 elif page == "📈 Clinic Health Insights":
@@ -140,14 +114,16 @@ elif page == "📈 Clinic Health Insights":
     st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
     st.area_chart({"A": 14069, "B": 7076, "C": 6913, "D": 30948, "E": 6819, "F": 23532, "G": 17919})
 
-# --- 7. PAGE: TRANSACTION LEDGER ---
-elif page == "📜 Transaction Ledger":
-    st.title("📜 Immutable Log")
-    ledger = pd.DataFrame([
+# --- 7. PAGE: TRANSACTION RECORDS ---
+# UPDATED: Renamed from Ledger
+elif page == "📜 Transaction Records":
+    st.title("📜 Immutable Transaction Records")
+    st.write("Verifiable audit trail of all inventory movements on the Sepolia Testnet.")
+    records = pd.DataFrame([
         {"Time": "21:05", "User": "CEO_Admin", "Action": "Added Tenofovir", "Hash": "0x4f2...a1b"},
         {"Time": "20:40", "User": "Finance_Lead", "Action": "Escrow Funded", "Hash": "0x8e1...c3d"}
     ])
-    st.table(ledger)
+    st.table(records)
 
 # --- 8. PAGE: HOSPITAL MANAGEMENT ---
 elif page == "🏥 Hospital Management":
@@ -160,4 +136,4 @@ elif page == "🚨 Alerts":
     st.error("Region F (Inner City) - Stock level critical (18%)")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain Procurement | v3.2")
+st.sidebar.caption("Eco-Chain Procurement | v3.3")
