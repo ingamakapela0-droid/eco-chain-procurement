@@ -23,13 +23,14 @@ st.markdown("""
         background-color: #0D9488;
         color: white;
         border-radius: 8px;
+        width: 100%;
     }
-    .subscription-card {
-        background-color: #E0F2F1;
+    .about-box {
+        background-color: #F1F5F9;
         padding: 20px;
-        border-radius: 12px;
-        border: 2px dashed #0D9488;
-        text-align: center;
+        border-radius: 10px;
+        border-left: 6px solid #0D9488;
+        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -38,110 +39,133 @@ st.markdown("""
 w3 = Web3(Web3.HTTPProvider(config.RPC_URL))
 contract = w3.eth.contract(address=config.CONTRACT_ADDRESS, abi=config.CONTRACT_ABI)
 
-# --- 3. SIDEBAR: LOGO & UPDATED PROFILES ---
+# --- 3. SIDEBAR: LOGO & SECURE WALLET PROFILES ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=120)
-
 st.sidebar.title("Eco-Chain")
 
+# Wallet Check
 user_address = streamlit_js_eval(js_expressions="window.ethereum ? window.ethereum.selectedAddress : null", key="wallet_check")
+
+# Role Mapping (Add your actual MetaMask addresses here)
+AUTH_WALLETS = {
+    "0xYourCEOWallet...": "CEO (Executive Access)",
+    "0xYourCOOWallet...": "COO (Operations Oversight)",
+    "0xYourFinanceWallet...": "Finance (Escrow Manager)"
+}
+
 if not user_address:
     if st.sidebar.button("🔐 Connect MetaMask"):
         streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' })")
+    current_role = "Guest / Public"
 else:
-    st.sidebar.success(f"Connected: {user_address[:6]}...{user_address[-4:]}")
-
-st.sidebar.divider()
-# UPDATED: Added Public Stakeholder Role
-user_role = st.sidebar.selectbox("Access Level:", [
-    "Management (CEO)", 
-    "Finance Dept", 
-    "Dispensary Staff", 
-    "Public Stakeholder (Read-Only)"
-])
+    current_role = AUTH_WALLETS.get(user_address.lower(), "Clinic Staff / Stakeholder")
+    st.sidebar.success(f"Verified: {current_role}")
 
 st.sidebar.divider()
 page = st.sidebar.radio("Navigation", [
     "🏠 Dashboard", 
-    "📊 External Subscription Portal", # NEW SECTION
+    "📊 External Subscription",
     "💊 Medication Registry", 
     "📈 Clinic Health Insights",
     "📜 Transaction Records",
     "🏥 Hospital Management"
 ])
 
-# --- 4. PAGE: DASHBOARD ---
+# --- 4. PAGE: DASHBOARD (Restored About & Notification) ---
 if page == "🏠 Dashboard":
-    st.title("🏥 Eco-Chain Dashboard")
-    st.info(f"Viewing as: **{user_role}**")
+    st.title("🏥 Eco-Chain | Regional Procurement")
     
-    # Mission Statement
+    # Restored Mission Statement
     st.markdown("""
-        <div style="background-color: #F1F5F9; padding: 20px; border-radius: 10px; border-left: 6px solid #0D9488;">
-            <h3>Eco-Chain Procurement Solutions</h3>
-            <p>A digital bridge utilizing <b>Ethereum Smart Contracts</b> to ensure medication continuity across Gauteng. 
-            Our platform provides an immutable record of inventory, creating a trustless environment for public health stakeholders.</p>
+        <div class="about-box">
+            <h3>Mission: Eco-Chain Procurement Solutions</h3>
+            <p>A digital bridge utilizing <b>Ethereum Smart Contracts</b> to ensure medication continuity. 
+            We mitigate stockouts for ART and diagnostics by providing a trustless escrow system and an 
+            immutable record of inventory across the Gauteng health network.</p>
         </div>
     """, unsafe_allow_html=True)
     
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Integrated Clinics", "42 Facilities", "Gauteng")
-    c2.metric("Verified Txns", "1,024", "Blockchain")
-    c3.metric("System Health", "Optimal", "Sepolia")
-
-# --- 5. NEW PAGE: EXTERNAL SUBSCRIPTION PORTAL ---
-elif page == "📊 External Subscription Portal":
-    st.title("🛡️ Stakeholder Access & Subscriptions")
-    st.write("External organizations can subscribe to real-time data feeds for research and oversight.")
+    col_main, col_side = st.columns([2, 1])
     
-    col_sub, col_api = st.columns(2)
-    
-    with col_sub:
-        st.markdown("""
-            <div class="subscription-card">
-                <h3>Tier 1: Researcher Access</h3>
-                <p>Access to anonymized regional health trends and clinic positivity rates.</p>
-                <h4 style="color:#0D9488;">0.05 ETH / Month</h4>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button("Subscribe via MetaMask"):
-            st.balloons()
-            st.success("Subscription transaction initiated.")
+    with col_main:
+        st.subheader("🔗 Core Blockchain Features")
+        f1, f2 = st.columns(2)
+        f1.info("**Trustless Escrow:** Payments locked until delivery verification.")
+        f2.info("**Immutable Logs:** Real-time, fraud-proof transaction records.")
+        
+        st.divider()
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Integrated Clinics", "42", "Gauteng")
+        c2.metric("On-Chain Txns", "1,024", "Verified")
+        c3.metric("System Health", "Optimal", "Sepolia")
 
-    with col_api:
-        st.subheader("🔗 API Keys")
-        st.write("Generate a secure key to pull Eco-Chain stats into your own BI tools (Tableau/PowerBI).")
-        st.code("X-ECO-CHAIN-KEY: 8f2b-92ea-44bc-918d", language="text")
-        st.button("Regenerate Key")
+    with col_side:
+        st.subheader("⚡ Notification Centre")
+        if st.button("🔔 New Order Notification"):
+            st.toast("Scanning blockchain for low stock levels...", icon="🔍")
+            st.info("System checking minimum thresholds in Region F.")
+        if st.button("🔄 Refresh System Logs"):
+            st.rerun()
+        st.divider()
+        st.error("**Alert:** Insulin Batch #09 is Low (Region D)")
 
-# --- 6. PAGE: MEDICATION REGISTRY (Role Protection) ---
+# --- 5. PAGE: EXTERNAL SUBSCRIPTION ---
+elif page == "📊 External Subscription":
+    st.title("🛡️ Stakeholder Subscription Portal")
+    st.write("External organizations can subscribe to regional stats and API feeds.")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("<div style='background-color:#E0F2F1; padding:20px; border-radius:12px; border:2px dashed #0D9488; text-align:center;'>"
+                    "<h3>Researcher Tier</h3><p>Anonymized Regional Trends</p><h4>0.05 ETH / Mo</h4></div>", unsafe_allow_html=True)
+        st.button("Subscribe via MetaMask", key="sub_btn")
+    with col_b:
+        st.subheader("🔗 API Access")
+        st.code("X-ECO-CHAIN-KEY: 8f2b-92ea-44bc-918d")
+        st.button("Regenerate Access Key")
+
+# --- 6. PAGE: MEDICATION REGISTRY (Restored Edit & Roles) ---
 elif page == "💊 Medication Registry":
     st.title("📝 Inventory Management")
-    if user_role == "Public Stakeholder (Read-Only)":
-        st.error("🚫 Access Denied. Your subscription level allows read-only access to stats, not inventory editing.")
-    elif user_role != "Management (CEO)":
-        st.warning("⚠️ Only Management can edit records.")
+    if "CEO" not in current_role and "COO" not in current_role:
+        st.error("🚫 Access Denied. Management credentials required.")
     else:
-        # (Standard Registry Logic from v3.4...)
-        st.info("Management Access Granted: You can now Add or Edit medication.")
-        st.tabs(["➕ Add New Medication", "✏️ Edit Medication"])
+        tab1, tab2 = st.tabs(["➕ Add New Medication", "✏️ Edit Medication"])
+        with tab1:
+            with st.form("add_form"):
+                n = st.text_input("Product Name")
+                s = st.number_input("Initial Stock", min_value=0)
+                t = st.number_input("Threshold", min_value=1)
+                p = st.number_input("Price (ETH)", format="%.6f")
+                if st.form_submit_button("Commit to Blockchain"):
+                    st.success("Transaction sent to MetaMask.")
+        with tab2:
+            st.selectbox("Select Medication to Edit:", ["Tenofovir", "Insulin", "Amoxicillin"])
+            st.number_input("Update Stock Level")
+            st.button("Confirm Update")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Full List) ---
 elif page == "📈 Clinic Health Insights":
-    st.title("📈 Regional Facility Data")
-    st.write("Public Stakeholders can view this data to monitor regional health performance.")
+    st.title("📈 Regional Insights")
     st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
-    # List of clinics from previous version...
-    st.selectbox("Select Region:", ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"])
+    
+    st.divider()
+    reg = st.selectbox("Select Region for Facility Mapping:", ["Region A", "Region D", "Region F"])
+    facilities = {
+        "Region A": ["Bophelong", "Diepsloot South", "Ebony Park", "Rabie Ridge"],
+        "Region D": ["Soweto", "Dobsonville", "Protea Glen", "Diepkloof"],
+        "Region F": ["Inner City Clinic", "CBD Hub", "Jeppe Clinic"]
+    }
+    st.write(f"Facilities in {reg}: {', '.join(facilities.get(reg, []))}")
 
 # --- 8. PAGE: TRANSACTION RECORDS ---
 elif page == "📜 Transaction Records":
     st.title("📜 Transaction Records")
-    records = pd.DataFrame([
-        {"Time": "21:05", "User": "CEO_Admin", "Action": "Added Tenofovir", "Hash": "0x4f2...a1b"},
-        {"Time": "20:40", "User": "Finance_Lead", "Action": "Escrow Funded", "Hash": "0x8e1...c3d"}
+    df = pd.DataFrame([
+        {"Time": "21:05", "User": "CEO", "Action": "Added Tenofovir", "Hash": "0x4f2...a1b"},
+        {"Time": "20:40", "User": "Finance", "Action": "Funded Escrow", "Hash": "0x8e1...c3d"}
     ])
-    st.table(records)
+    st.table(df)
 
 # --- 9. PAGE: HOSPITAL MANAGEMENT ---
 elif page == "🏥 Hospital Management":
@@ -151,4 +175,4 @@ elif page == "🏥 Hospital Management":
         st.markdown(f"- **{h}**")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain Procurement | v3.5")
+st.sidebar.caption("Eco-Chain Procurement | v3.6")
