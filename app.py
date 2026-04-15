@@ -104,8 +104,7 @@ if "Hospital Overview" in page:
 
     with st.expander("ℹ️ About the Eco-Chain Procurement Solution"):
         st.write("""
-            This decentralized application is built to optimize supply chains for logistics 
-            providers like **Optimum Edge**. Using Ethereum Smart Contracts, we ensure:
+           . Using Ethereum Smart Contracts, we ensure:
             - **Trustless Escrow:** Payments are locked until receipt is verified.
             - **Transparency:** All stakeholders see the same inventory data in real-time.
             - **Security:** Immutable records prevent procurement fraud.
