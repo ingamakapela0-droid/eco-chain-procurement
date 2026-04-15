@@ -67,7 +67,6 @@ page = st.sidebar.radio("Navigation", [
 # --- 5. PAGE: HOSPITAL OVERVIEW ---
 if page == "📊 Hospital Overview":
     st.subheader("📊 Operational Transparency Dashboard")
-    
     col1, col2 = st.columns(2)
     try:
         orders_total = contract.functions.orderCount().call()
@@ -78,27 +77,22 @@ if page == "📊 Hospital Overview":
     col2.metric("Network Status", "Active", delta="Sepolia Testnet")
     
     st.divider()
-    
     c1, c2 = st.columns([2, 1])
     with c1:
         st.subheader("📋 System Integrity")
         st.success(f"Verified Smart Contract: `{config.CONTRACT_ADDRESS}`")
-        st.write("**Blockchain Transparency Ledger**")
         st.write("Current procurement data is immutable and verifiable by all health stakeholders.")
-    
     with c2:
         st.subheader("⚡ Quick Actions")
-        # --- RE-ADDED NOTIFICATION LOGIC ---
         if st.button("New Order Notification"):
             st.toast("Scanning blockchain for low stock levels...", icon="🔍")
             st.info("System checking minimum thresholds across all regions.")
-        
         if st.button("Refresh System Logs"):
             st.rerun()
 
-# --- 6. PAGE: CLINIC HEALTH INSIGHTS ---
+# --- 6. PAGE: CLINIC HEALTH INSIGHTS (With Clinic Names) ---
 elif page == "📈 Clinic Health Insights":
-    st.header("📈 Regional HIV Trends")
+    st.header("📈 Regional HIV Trends & Facilities")
     c1, c2, c3 = st.columns(3)
     c1.metric("Avg. Positivity Rate", "6.2%")
     c2.metric("ART Target Gap", "107,276")
@@ -111,6 +105,24 @@ elif page == "📈 Clinic Health Insights":
     with col_r:
         st.write("**Treatment Shortfall (Gap)**")
         st.area_chart({"A": 14069, "B": 7076, "C": 6913, "D": 30948, "E": 6819, "F": 23532, "G": 17919})
+
+    st.divider()
+    st.subheader("📍 Regional Facility Mapping")
+    region_map = st.selectbox("Select Region to view clinic list:", ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"])
+    
+    facilities = {
+        "Region A": ["Bophelong Clinic", "Diepsloot South Clinic", "Ebony Park / Kaalfontein Clinic", "Eyathu Ya Rona Clinic", "Halfway House Clinic", "Mayibuye Clinic", "Midrand West Clinic", "Rabie Ridge Clinic"],
+        "Region B": ["Berario Clinic", "Bosmont Clinic", "Claremont Clinic", "Parkhurst Clinic", "Randburg Clinic", "Riverlea Major Clinic", "Rosebank Satellite Clinic", "Windsor Clinic"],
+        "Region C": ["Roodepoort Clinic", "Constantia Kloof", "Northgate", "Florida", "Bram Fischerville"],
+        "Region D": ["Doornkop", "Soweto", "Dobsonville", "Protea Glen", "Diepkloof"],
+        "Region E": ["Alexandra", "Wynberg", "Sandton", "Orange Grove", "Houghton"],
+        "Region F": ["Inner City", "Johannesburg South", "CBD", "South Gate"],
+        "Region G": ["Orange Farm", "Ennerdale", "Lenasia", "Eldorado Park", "Protea South"]
+    }
+    
+    with st.expander(f"🏥 Registered Facilities in {region_map}", expanded=True):
+        for clinic in facilities[region_map]:
+            st.write(f"- {clinic}")
 
 # --- 7. PAGE: DISPENSARY (STAFF) ---
 elif page == "🏥 Dispensary (Staff)":
@@ -165,4 +177,4 @@ elif page == "🔑 Management (CEO)":
                     st.error(f"Error: {e}")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain Procurement | v2.8")
+st.sidebar.caption("Eco-Chain Procurement | v2.9")
