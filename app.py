@@ -140,4 +140,4 @@ elif page == "💰 Finance & Escrow":
     with st.form("escrow_form"):
         o_id = st.number_input("Order ID to Fund", min_value=1, step=1)
         eth_val = st.number_input("Deposit Amount (ETH)", min_value=0.0, format="%.6f")
-        submitted = st.form_submit_button("Deposit into
+        
