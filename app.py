@@ -139,26 +139,86 @@ elif page == "💊 Medication Registry":
         st.number_input("New Stock Count")
         st.button("Update Record")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (With Subscription Check) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Replacing Graphs with Clear Information) ---
 elif page == "📈 Clinic Health Insights":
-    st.title("📈 Regional Insights & Facility Directory")
+    st.title("📈 Regional Health Insights & Facility Analysis")
     
     if not st.session_state.subscribed and current_role == "Public Stakeholder (Read-Only)":
-        st.warning("🔒 Restricted Access: Subscription required to view detailed analytics.")
-        st.info("Visit the **Subscription Portal** to activate your researcher access.")
+        st.warning("🔒 Restricted Access: A researcher subscription is required to view regional analytics.")
+        st.info("Please visit the **Subscription Portal** to activate your access.")
     else:
-        st.success("✅ Access Granted")
-        st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
+        st.success("✅ Researcher Access Verified")
+        
+        # This replaces the confusing graphs with a clear data summary
+        st.subheader("📊 Regional Performance Overview")
+        
+        info_col1, info_col2 = st.columns(2)
+        
+        with info_col1:
+            st.markdown("""
+                <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border-left: 5px solid #0D9488;">
+                    <h4>🏥 Clinical Adherence Gaps</h4>
+                    <p>Based on recent inventory data, <b>Region F</b> and <b>Region G</b> are currently showing 
+                    the highest gaps in ART adherence. This suggests that medication stockouts in these 
+                    areas are directly impacting patient treatment consistency.</p>
+                    <ul>
+                        <li><b>Highest Demand:</b> Region D (Soweto Hub)</li>
+                        <li><b>Supply Chain Lag:</b> Region F (Inner City)</li>
+                    </ul>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with info_col2:
+            st.markdown("""
+                <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border-left: 5px solid #0D9488;">
+                    <h4>📉 Positivity Rate Trends</h4>
+                    <p>Anonymized testing data indicates a 4% increase in new registrations across 
+                    <b>Region A</b>. The Eco-Chain bridge is proactively flagging these clinics 
+                    for increased pediatric medication quotas for the next quarter.</p>
+                    <ul>
+                        <li><b>Projected Growth:</b> +12% in Region A</li>
+                        <li><b>Stable Regions:</b> Region B and E</li>
+                    </ul>
+                </div>
+            """, unsafe_allow_html=True)
+
         st.divider()
+        
+        # Detailed Facility Directory
         st.subheader("📍 Regional Facility Directory")
+        st.write("Below is the mapping of specific clinics to their respective procurement regions.")
+        
         r1, r2, r3 = st.columns(3)
         with r1:
-            st.markdown("<div class='region-card'><b>Region A (Midrand)</b><br>• Bophelong Clinic<br>• Diepsloot South<br>• Ebony Park</div>", unsafe_allow_html=True)
+            st.markdown("""
+                <div class='region-card'>
+                    <b>Region A (Midrand/North)</b><br>
+                    • Bophelong Clinic<br>
+                    • Diepsloot South<br>
+                    • Ebony Park<br>
+                    • Rabie Ridge
+                </div>
+            """, unsafe_allow_html=True)
         with r2:
-            st.markdown("<div class='region-card'><b>Region D (Soweto)</b><br>• Doornkop<br>• Dobsonville<br>• Protea Glen</div>", unsafe_allow_html=True)
+            st.markdown("""
+                <div class='region-card'>
+                    <b>Region D (Soweto)</b><br>
+                    • Doornkop<br>
+                    • Dobsonville<br>
+                    • Protea Glen<br>
+                    • Diepkloof
+                </div>
+            """, unsafe_allow_html=True)
         with r3:
-            st.markdown("<div class='region-card'><b>Region F (Inner City)</b><br>• CBD Health Hub<br>• Jeppe Clinic<br>• Joubert Park</div>", unsafe_allow_html=True)
-
+            st.markdown("""
+                <div class='region-card'>
+                    <b>Region F (Inner City)</b><br>
+                    • CBD Health Hub<br>
+                    • Jeppe Clinic<br>
+                    • Joubert Park<br>
+                    • 80 Albert Street
+                </div>
+            """, unsafe_allow_html=True)
 # --- 8. PAGE: TRANSACTION RECORDS (Internal Only) ---
 elif page == "📜 Transaction Records":
     st.title("📜 Internal Transaction Logs")
