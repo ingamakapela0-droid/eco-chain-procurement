@@ -18,7 +18,7 @@ st.markdown("""
     }
     .region-card {
         background-color: #FFFFFF; padding: 15px; border-radius: 10px;
-        border: 1px solid #E2E8F0; margin-bottom: 15px; min-height: 180px;
+        border: 1px solid #E2E8F0; margin-bottom: 15px; min-height: 200px;
     }
     .mission-text { font-size: 1.05rem; line-height: 1.6; color: #1E293B; text-align: justify; }
     </style>
@@ -38,7 +38,7 @@ if current_role in ["Management (CEO)", "Operations (COO)"]:
 
 page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 4. PAGE: DASHBOARD (Updated Overview) ---
+# --- 4. PAGE: DASHBOARD (The Full 3-Paragraph Mission Statement) ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     st.markdown(f"""
@@ -63,12 +63,11 @@ if page == "🏠 Dashboard":
         </div>
     """, unsafe_allow_html=True)
     
-    # Internal metrics only
     if current_role != "Public Stakeholder (Read-Only)":
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Integrated Clinics", "42", "Gauteng")
-        c2.metric("Verified Txns", "1,024", "Blockchain")
-        c3.metric("System Health", "Optimal", "Sepolia")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Integrated Clinics", "42", "Gauteng")
+        col2.metric("Verified Txns", "1,024", "Blockchain")
+        col3.metric("System Health", "Optimal", "Sepolia")
         st.subheader("⚡ Notification Centre")
         st.error("**Urgent Alert:** Region F stock below 20%")
 
@@ -79,25 +78,67 @@ elif page == "📊 Subscription Portal":
         st.session_state.subscribed = True
         st.balloons()
 
-# --- 6. PAGE: MEDICATION REGISTRY ---
+# --- 6. PAGE: MEDICATION REGISTRY (Full restored inputs) ---
 elif page == "💊 Medication Registry":
     st.title("📝 Inventory Management")
+    st.subheader("Register New Medication Batch")
     with st.form("reg_form"):
-        st.text_input("Product Name")
-        st.number_input("Initial Stock", min_value=0)
-        st.number_input("Threshold", min_value=1)
+        st.text_input("Product Name (e.g., Tenofovir)")
+        st.number_input("Initial Stock Level", min_value=0)
+        st.number_input("Low Stock Threshold", min_value=1)
         st.number_input("Unit Price (ETH)", format="%.6f")
         st.form_submit_button("Commit to Blockchain")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Locked Data Tables) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Full tables, no tabs) ---
 elif page == "📈 Clinic Health Insights":
-    st.title("📈 Regional Health Insights")
+    st.title("📈 Regional Health Insights & Data Tables")
     if not st.session_state.subscribed and current_role == "Public Stakeholder (Read-Only)":
         st.warning("🔒 Restricted: Subscription required to view detailed clinical data.")
     else:
-        tab_hiv, tab_tb = st.tabs(["🎗️ HIV Data", "🫁 TB Data"])
-        with tab_hiv:
-            st.subheader("Table 6: HIV Positivity")
-            st.table(pd.DataFrame({
-                "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-                "Positivity Rate": ["5.9%", "4.
+        # HIV TABLES
+        st.subheader("📊 Table 6: HIV Positive Test Results")
+        st.table(pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
+            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+            "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
+        }))
+
+        st.subheader("📉 Table 7: ART Adherence Gaps")
+        st.table(pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Actual on ART": [58829, 22271, 34993, 115098, 37839, 83650, 56560],
+            "Gap to Target": [14069, 7076, 6913, 30948, 6819, 23532, 17919],
+            "Progress %": ["80.7%", "75.9%", "83.5%", "78.8%", "84.7%", "78.0%", "75.9%"]
+        }))
+
+        # TB TABLES
+        st.subheader("🫁 Table 4: Drug Sensitive TB Outcomes")
+        st.table(pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Success Rate %": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
+            "Death Rate %": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"],
+            "Lost to Follow-up %": ["4.8%", "5.5%", "8.2%", "10.9%", "6.7%", "9.6%", "11.0%"]
+        }))
+
+        st.divider()
+        st.subheader("📍 Regional Facility Directory")
+        r1, r2, r3 = st.columns(3)
+        with r1:
+            st.markdown("<div class='region-card'><b>Region A & B</b><br>• Bophelong Clinic<br>• Diepsloot South<br>• Berario Clinic<br>• Bosmont Clinic</div>", unsafe_allow_html=True)
+            st.info("**Helen Joseph Hospital**")
+        with r2:
+            st.markdown("<div class='region-card'><b>Region C & D</b><br>• Florida Clinic<br>• Soweto Hub<br>• Dobsonville Clinic<br>• Protea Glen</div>", unsafe_allow_html=True)
+            st.info("**Chris Hani Baragwanath**")
+        with r3:
+            st.markdown("<div class='region-card'><b>Region E, F & G</b><br>• CBD Health Hub<br>• Jeppe Clinic<br>• Orange Farm<br>• Ennerdale</div>", unsafe_allow_html=True)
+            st.info("**Rahima Moosa Mother & Child**")
+
+# --- 8. PAGE: TRANSACTION RECORDS ---
+elif page == "📜 Transaction Records":
+    st.title("📜 Internal Transaction Logs")
+    st.table([{"Time": "21:05", "User": "CEO", "Action": "Added Tenofovir", "Status": "Verified"}])
+
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Eco-Chain v5.6 | {current_role}")
+
