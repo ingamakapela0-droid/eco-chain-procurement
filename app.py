@@ -47,7 +47,7 @@ if current_role in ["Management (CEO)", "Operations (COO)", "Finance Dept"]:
 
 page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 4. PAGE: DASHBOARD (LOCKED MISSION STATEMENT) ---
+# --- 4. PAGE: DASHBOARD (FULL 3-PARAGRAPH MISSION) ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     st.markdown(f"""
@@ -96,7 +96,7 @@ elif page == "💊 Medication Registry":
         st.number_input("Unit Price (ETH)", format="%.6f")
         st.form_submit_button("Commit to Blockchain")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (EXACT TB & HIV TABLES) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (TB & HIV TABLES) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights")
     
@@ -107,23 +107,55 @@ elif page == "📈 Clinic Health Insights":
     else:
         st.success(f"✅ Access Granted: {current_role}")
         
-        # HIV TABLES (Restored)
-        st.subheader("📊 Table 6: HIV positive test results by region (DHIS 2020)")
+        # HIV Table 6
+        st.subheader("📊 Table 6: HIV positive test results (DHIS 2020)")
         st.table(pd.DataFrame({
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Region": ["A", "B", "C", "D", "E", "F", "G"],
             "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
-            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
-            "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
+            "Positive": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+            "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
         }))
 
-        st.subheader("📉 Table 7: Total PLHIV remaining on ART against the target")
+        # HIV Table 7
+        st.subheader("📉 Table 7: PLHIV remaining on ART against the target")
         st.table(pd.DataFrame({
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Region": ["A", "B", "C", "D", "E", "F", "G"],
             "Actual on ART": [58829, 22271, 34993, 115098, 37839, 83650, 56560],
-            "Gap to Target": [14069, 7076, 6913, 30948, 6819, 23532, 17919],
-            "Progress %": ["8
-  
+            "Gap": [14069, 7076, 6913, 30948, 6819, 23532, 17919],
+            "Progress %": ["80.7%", "75.9%", "83.5%", "78.8%", "84.7%", "78.0%", "75.9%"]
+        }))
 
+        # TB Table 4 (Exact horizontal match to image)
+        st.subheader("🫁 Table 4: Drug Sensitive TB outcomes (April 2018 - March 2019)")
+        tb_df = pd.DataFrame({
+            "Indicators": ["Success rate", "Death rate", "Failed rate", "Lost to follow-up"],
+            "Reg A": ["89.4%", "5.3%", "0.5%", "4.8%"],
+            "Reg B": ["90.3%", "3.7%", "0.5%", "5.5%"],
+            "Reg C": ["87.5%", "4.3%", "0.0%", "8.2%"],
+            "Reg D": ["80.5%", "7.8%", "0.8%", "10.9%"],
+            "Reg E": ["87.0%", "5.8%", "0.5%", "6.7%"],
+            "Reg F": ["80.7%", "4.0%", "5.7%", "9.6%"],
+            "Reg G": ["81.5%", "7.1%", "0.4%", "11.0%"]
+        })
+        st.table(tb_df)
 
+        st.divider()
+        st.subheader("📍 Regional Network Directory")
+        r1, r2, r3 = st.columns(3)
+        with r1:
+            st.markdown("<div class='region-card'><b>Region A & B</b><br>• Bophelong<br>• Diepsloot South<br>• Berario Clinic</div>", unsafe_allow_html=True)
+            st.info("**Helen Joseph Hospital**")
+        with r2:
+            st.markdown("<div class='region-card'><b>Region C & D</b><br>• Florida Clinic<br>• Soweto Hub<br>• Dobsonville</div>", unsafe_allow_html=True)
+            st.info("**Chris Hani Baragwanath**")
+        with r3:
+            st.markdown("<div class='region-card'><b>Region E, F & G</b><br>• CBD Health Hub<br>• Orange Farm<br>• Ennerdale</div>", unsafe_allow_html=True)
+            st.info("**Rahima Moosa Mother & Child**")
 
-       
+# --- 8. PAGE: TRANSACTION RECORDS ---
+elif page == "📜 Transaction Records":
+    st.title("📜 Transaction Logs")
+    st.table([{"Time": "21:05", "User": current_role, "Action": "Audit Review"}])
+
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Eco-Chain v6.2 | {current_role}")
