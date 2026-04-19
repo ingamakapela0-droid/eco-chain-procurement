@@ -61,14 +61,18 @@ if user_type == "Internal Executive/Technical Team":
 else:
     current_role = "Public Stakeholder"
 
-# --- 4. STRICT ACCESS GATE ---
+# --- 4. ACCESS CONTROL GATE ---
 if user_type == "Public Stakeholder" and not st.session_state.subscribed:
+    # Stakeholders ONLY see the subscription page until they pay
     nav_options = ["📊 Subscription Portal"]
     page = "📊 Subscription Portal"
 else:
-    nav_options = ["🏠 Dashboard", "📍 Regional Network", "📊 Subscription Portal", "📈 Clinic Health Insights"]
+    # Updated Order: Dashboard first, then Subscription
+    nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📍 Regional Network", "📈 Clinic Health Insights"]
+    
     if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
         nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
+    
     page = st.sidebar.radio("Navigation", nav_options)
 
 # --- 5. PAGE: SUBSCRIPTION PORTAL ---
