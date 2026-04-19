@@ -77,7 +77,7 @@ if page == "Login Required":
     st.markdown("---")
     st.write("Ensuring transparency and accountability in pharmaceutical procurement through blockchain technology.")
 
-# --- 6. PAGE: DASHBOARD (RESTORED OVERVIEW) ---
+# --- 6. PAGE: DASHBOARD (3-PARAGRAPH MISSION) ---
 elif page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     st.markdown("""
@@ -108,7 +108,7 @@ elif page == "🏠 Dashboard":
         c2.metric("Verified Txns", "1,024", "On-Chain")
         c3.metric("System Health", "Optimal", "Sepolia")
 
-# --- 7. PAGE: REGIONAL NETWORK (RESTORED REGIONS) ---
+# --- 7. PAGE: REGIONAL NETWORK ---
 elif page == "📍 Regional Network":
     st.title("📍 Gauteng Regional Health Network")
     col1, col2, col3 = st.columns(3)
@@ -138,11 +138,11 @@ elif page == "📊 Subscription Portal":
     else:
         st.success("✅ Subscription Active. Clinical Database Unlocked.")
 
-# --- 9. PAGE: CLINIC HEALTH INSIGHTS (RESTORED TB/HIV TABLES) ---
+# --- 9. PAGE: CLINIC HEALTH INSIGHTS (CORRECTED TABLES) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights")
     if not st.session_state.subscribed and current_role == "Public Stakeholder":
-        st.warning("🔒 Restricted: Researcher Subscription required to view Table 4, 6, and 7.")
+        st.warning("🔒 Restricted: Researcher Subscription required.")
     else:
         st.subheader("📊 Table 6 & 7: HIV Data (DHIS 2020)")
         st.table(pd.DataFrame({
@@ -153,9 +153,36 @@ elif page == "📈 Clinic Health Insights":
         }))
 
         st.subheader("🫁 Table 4: Drug Sensitive TB Outcomes")
-        st.table(pd.DataFrame({
+        tb_dict = {
             "Indicators": ["Success rate", "Death rate", "Failed rate", "Lost to follow-up"],
             "Reg A": ["89.4%", "5.3%", "0.5%", "4.8%"],
             "Reg B": ["90.3%", "3.7%", "0.5%", "5.5%"],
             "Reg C": ["87.5%", "4.3%", "0.0%", "8.2%"],
             "Reg D": ["80.5%", "7.8%", "0.8%", "10.9%"],
+            "Reg E": ["87.0%", "5.8%", "0.5%", "6.7%"],
+            "Reg F": ["80.7%", "4.0%", "5.7%", "9.6%"],
+            "Reg G": ["81.5%", "7.1%", "0.4%", "11.0%"]
+        }
+        st.table(pd.DataFrame(tb_dict))
+
+# --- 10. PAGE: MEDICATION REGISTRY ---
+elif page == "💊 Medication Registry":
+    st.title("💊 Register Medication Assets")
+    with st.form("mint_form"):
+        med_type = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)"])
+        med_name = st.text_input("Medication Name")
+        quantity = st.number_input("Quantity", min_value=1)
+        if st.form_submit_button("Mint Asset to Blockchain"):
+            st.session_state.inventory.append({"Type": med_type, "Name": med_name, "Qty": quantity})
+            st.toast("Transaction sent to MetaMask activity.")
+
+# --- 11. PAGE: TRANSACTION RECORDS ---
+elif page == "📜 Transaction Records":
+    st.title("📜 On-Chain Transaction Ledger")
+    if st.session_state.inventory:
+        st.table(pd.DataFrame(st.session_state.inventory))
+    else:
+        st.info("No transactions found on the current block.")
+
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Eco-Chain v7.1 | User: {USER_WALLET[:6]}")
