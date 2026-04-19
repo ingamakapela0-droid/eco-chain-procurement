@@ -77,10 +77,7 @@ if page == "🏠 Dashboard":
                 By automating and digitising the inventory management process, Eco-Chain reduces the likelihood of human error, 
                 miscounts, and delays in reporting low stock. This ensures that healthcare providers can make informed decisions quickly, 
                 improving operational efficiency and patient care outcomes.<br><br>
-                Importantly, this system also has a direct impact on patient experience and public health. By maintaining consistent 
-                medication availability, Eco-Chain helps reduce the number of patients who travel to healthcare facilities only 
-                to find that their required medication is out of stock. Overall, Eco-Chain Procurement Solutions enhances coordination 
-                between supply and demand, contributing to more reliable and equitable access to essential medicines.
+                
             </div>
         </div>
     """, unsafe_allow_html=True)
