@@ -78,13 +78,27 @@ if page == "🏠 Dashboard":
         c2.metric("Verified Txns", "1,024", "Blockchain")
         c3.metric("System Health", "Optimal", "Sepolia")
 
-# --- 5. PAGE: SUBSCRIPTION PORTAL ---
+# --- 5. PAGE: SUBSCRIPTION PORTAL (SCANNING CODE OPTION) ---
 elif page == "📊 Subscription Portal":
-    st.title("🛡️ Subscription Portal")
-    if st.button("Subscribe via MetaMask (0.05 ETH)"):
-        st.session_state.subscribed = True
-        st.balloons()
-        st.rerun()
+    st.title("🛡️ Researcher Subscription Portal")
+    if st.session_state.subscribed:
+        st.success("✅ Subscription Active: Clinic Health Insights Unlocked.")
+    else:
+        st.write("Scan the code below using your mobile wallet to authorize the 0.05 ETH transaction.")
+        
+        # This creates a visual block that looks like a QR scanning area
+        st.markdown("""
+            <div class="qr-container">
+                <p style='font-size: 40px;'>🔳</p>
+                <p><b>Wallet Address: 0x71C...4f92</b></p>
+                <small>Scan with MetaMask or Trust Wallet</small>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("Confirm Scan & Link Wallet"):
+            st.session_state.subscribed = True
+            st.balloons()
+            st.rerun()
 
 # --- 6. PAGE: MEDICATION REGISTRY ---
 elif page == "💊 Medication Registry":
