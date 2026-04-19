@@ -15,17 +15,20 @@ st.markdown("""
     .metamask-card {
         background-color: #F2F4F6; border: 1px solid #D1D5DB;
         border-radius: 15px; padding: 20px; color: #1F2937;
-        font-family: 'Courier New', Courier, monospace;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     .asset-row {
-        background: white; padding: 10px; border-radius: 8px;
-        margin-top: 10px; border: 1px solid #E5E7EB;
+        background: white; padding: 12px; border-radius: 10px;
+        margin-top: 10px; border: 1px solid #E5E7EB; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+    .wallet-header { color: #6B7280; font-size: 0.85rem; margin-bottom: 10px; }
     .mission-text { font-size: 1.05rem; line-height: 1.6; color: #1E293B; text-align: justify; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SESSION STATE (To track registered medication) ---
+# --- 2. SESSION STATE ---
+USER_WALLET = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
+
 if "inventory" not in st.session_state:
     st.session_state.inventory = []
 if "subscribed" not in st.session_state:
@@ -80,14 +83,14 @@ elif page == "📊 Subscription Portal":
     st.title("🛡️ Researcher Subscription Portal")
     if not st.session_state.subscribed:
         st.write("Scan to authorize 0.05 ETH for Health Data access.")
-        st.info("Wallet: 0x71C...4f92")
-        if st.button("Authorize via MetaMask"):
+        st.info(f"Connected Wallet: {USER_WALLET}")
+        if st.button("Confirm Transaction in MetaMask"):
             st.session_state.subscribed = True
             st.rerun()
     else:
-        st.success("✅ Subscription Active.")
+        st.success(f"✅ Subscription Active for {USER_WALLET}")
 
-# --- 6. PAGE: MEDICATION REGISTRY (Now with Asset Visibility) ---
+# --- 6. PAGE: MEDICATION REGISTRY (Linked to User Wallet) ---
 elif page == "💊 Medication Registry":
     st.title("💊 Medication Asset Registry")
     
@@ -102,32 +105,41 @@ elif page == "💊 Medication Registry":
             price = st.number_input("Unit Price (ETH)", format="%.4f", value=0.0012)
             
             if st.form_submit_button("Mint Asset to Blockchain"):
-                new_asset = {"Type": med_type, "Name": med_name, "Qty": quantity, "Price": price}
+                new_asset = {"Type": med_type, "Name": med_name, "Qty": quantity, "Price": price, "Wallet": USER_WALLET}
                 st.session_state.inventory.append(new_asset)
-                st.toast(f"Successfully minted {med_name} to Sepolia Testnet!")
+                st.toast(f"Transaction Confirmed! Asset added to {USER_WALLET[:6]}...")
 
     with col_meta:
-        st.subheader("🦊 MetaMask Assets")
-        st.markdown("<div class='metamask-card'>", unsafe_allow_html=True)
-        st.write("Account 1 (0x71...4f92)")
-        st.write("---")
+        st.subheader("🦊 MetaMask")
+        st.markdown(f"""
+            <div class='metamask-card'>
+                <div class='wallet-header'>Account 1 ({USER_WALLET[:10]}...)</div>
+                <h2 style='margin:0;'>0.842 ETH</h2>
+                <div style='color:#6B7280; font-size:0.8rem; margin-bottom:20px;'>$2,145.12 USD</div>
+                <div style='border-top:1px solid #D1D5DB; padding-top:10px;'>
+                    <b>Assets (Tokens)</b>
+                </div>
+        """, unsafe_allow_html=True)
+        
         if not st.session_state.inventory:
-            st.caption("No assets found in wallet.")
+            st.caption("No medication assets found.")
         else:
             for item in st.session_state.inventory:
                 st.markdown(f"""
                     <div class='asset-row'>
-                        <small>{item['Type']}</small><br>
+                        <span style='font-size:0.7rem; color:#0D9488;'>{item['Type']}</span><br>
                         <b>{item['Name']}</b><br>
-                        <span style='color:#0D9488;'>{item['Qty']} Units</span>
+                        <span style='font-size:0.9rem;'>{item['Qty']} Units</span>
                     </div>
                 """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (RESTORED) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights")
-    if not st.session_state.subscribed and current_role == "Public Stakeholder (Read-Only)":
+    is_internal = current_role in ["Management (CEO)", "Operations (COO)", "Finance Dept"]
+    
+    if not st.session_state.subscribed and not is_internal:
         st.warning("🔒 Restricted: Detailed clinical data requires a Researcher Subscription.")
     else:
         st.subheader("📊 Table 6: HIV Positivity (DHIS 2020)")
@@ -138,7 +150,7 @@ elif page == "📈 Clinic Health Insights":
             "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
         }))
 
-        st.subheader("🫁 Table 4: TB Outcomes (2018-2019)")
+        st.subheader("🫁 Table 4: Drug Sensitive TB Outcomes")
         tb_df = pd.DataFrame({
             "Indicators": ["Success rate", "Death rate", "Failed rate", "Lost to follow-up"],
             "Reg A": ["89.4%", "5.3%", "0.5%", "4.8%"],
@@ -153,11 +165,14 @@ elif page == "📈 Clinic Health Insights":
 
 # --- 8. PAGE: TRANSACTION RECORDS ---
 elif page == "📜 Transaction Records":
-    st.title("📜 Blockchain Transaction Records")
+    st.title("📜 Transaction Logs")
     if st.session_state.inventory:
         st.write(pd.DataFrame(st.session_state.inventory))
     else:
-        st.info("No transactions recorded on this block yet.")
+        st.info("No transaction data found on-chain.")
 
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Eco-Chain v6.4 | {current_role}")
+st.sidebar.caption(f"Eco-Chain v6.5 | {current_role}")
+
+
+     
