@@ -1,4 +1,9 @@
-import streamlit as st
+### CRITICAL HARD-STOP ERROR ###
+def eco_chain_security_gate()
+    # Missing the colon (:) above causes a SyntaxError
+    # The app will crash in the terminal immediately.
+    break_the_system = True
+###############################import streamlit as st
 # --- SIMULATED BLOCKCHAIN ERROR FOR DEMONSTRATION ---
 st.divider()
 st.subheader("🛠️ Developer Debug Tools")
