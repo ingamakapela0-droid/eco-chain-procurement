@@ -71,17 +71,45 @@ else:
         nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
     page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 5. PAGE: SUBSCRIPTION PORTAL (THE LOCK) ---
+# --- 5. PAGE: SUBSCRIPTION PORTAL ---
 if page == "📊 Subscription Portal":
     st.title("🛡️ Secure Data Access Portal")
+    
     if not st.session_state.subscribed and user_type == "Public Stakeholder":
-        st.warning("🚨 Access Restricted: Clinical and procurement data hidden.")
-        st.info("To view the Dashboard, Regional Network, and Health Insights, a subscription is required.")
-        if st.button("💳 Secure Payment & Unlock All Information"):
-            st.session_state.subscribed = True
-            st.rerun()
+        st.warning("🚨 Access Restricted: This system contains sensitive clinical and procurement data.")
+        st.info("Public stakeholders are required to process a blockchain transaction to unlock access.")
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("""
+            ### Unlocking Benefits:
+            * **Real-time Regional Network Access**
+            * **Medication Demand Forecasting**
+            * **HIV & TB Clinical Tables (4, 6, 7)**
+            """)
+        with c2:
+            st.markdown("### 🦊 MetaMask Transaction")
+            st.write(f"Amount: **0.05 ETH**")
+            st.write(f"Destination Wallet: `{USER_WALLET[:18]}...`")
+            
+            if st.button("🦊 Pay & Secure Access via MetaMask"):
+                with st.spinner("Requesting MetaMask signature..."):
+                    import time
+                    time.sleep(2) # Simulates the wallet popup interaction
+                st.session_state.subscribed = True
+                st.success("Transaction Verified! All modules unlocked.")
+                st.balloons()
+                st.rerun()
     else:
-        st.success("✅ Access Granted. Use the sidebar to navigate.")
+        # What they see after they have paid
+        st.success("✅ Subscription Verified on Blockchain.")
+        st.markdown("""
+            <div style="background-color: #D1FAE5; padding: 20px; border-radius: 10px; border: 1px solid #059669;">
+                <h3 style="color: #065F46; margin-top: 0;">Access Granted</h3>
+                <p style="color: #065F46;">Your wallet has been whitelisted. You can now access the 
+                <b>Dashboard</b>, <b>Regional Network</b>, and <b>Health Insights</b> via the sidebar.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
 # --- 6. PAGE: DASHBOARD ---
 elif page == "🏠 Dashboard":
@@ -179,4 +207,4 @@ elif page == "📜 Transaction Records":
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Eco-Chain v7.7 | Security Level: High")
 
- 
+      
