@@ -139,86 +139,61 @@ elif page == "💊 Medication Registry":
         st.number_input("New Stock Count")
         st.button("Update Record")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Replacing Graphs with Clear Information) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Populated with your UNAIDS/DHIS Data) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights & Facility Analysis")
+    st.caption("Source: City of Johannesburg Profile on HIV Epidemic Trends (DHIS 2020)")
     
     if not st.session_state.subscribed and current_role == "Public Stakeholder (Read-Only)":
-        st.warning("🔒 Restricted Access: A researcher subscription is required to view regional analytics.")
-        st.info("Please visit the **Subscription Portal** to activate your access.")
+        st.warning("🔒 Restricted Access: A researcher subscription is required to view these data tables.")
+        st.info("Please visit the **Subscription Portal** to unlock access.")
     else:
         st.success("✅ Researcher Access Verified")
         
-        # This replaces the confusing graphs with a clear data summary
-        st.subheader("📊 Regional Performance Overview")
+        # TABLE 6: HIV POSITIVITY RESULTS
+        st.subheader("📊 Table 6: HIV Positive Test Results (Regional)")
+        pos_data = {
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
+            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+            "Positivity %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
+        }
+        st.table(pd.DataFrame(pos_data))
         
-        info_col1, info_col2 = st.columns(2)
-        
-        with info_col1:
-            st.markdown("""
-                <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border-left: 5px solid #0D9488;">
-                    <h4>🏥 Clinical Adherence Gaps</h4>
-                    <p>Based on recent inventory data, <b>Region F</b> and <b>Region G</b> are currently showing 
-                    the highest gaps in ART adherence. This suggests that medication stockouts in these 
-                    areas are directly impacting patient treatment consistency.</p>
-                    <ul>
-                        <li><b>Highest Demand:</b> Region D (Soweto Hub)</li>
-                        <li><b>Supply Chain Lag:</b> Region F (Inner City)</li>
-                    </ul>
-                </div>
-            """, unsafe_allow_html=True)
-
-        with info_col2:
-            st.markdown("""
-                <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; border-left: 5px solid #0D9488;">
-                    <h4>📉 Positivity Rate Trends</h4>
-                    <p>Anonymized testing data indicates a 4% increase in new registrations across 
-                    <b>Region A</b>. The Eco-Chain bridge is proactively flagging these clinics 
-                    for increased pediatric medication quotas for the next quarter.</p>
-                    <ul>
-                        <li><b>Projected Growth:</b> +12% in Region A</li>
-                        <li><b>Stable Regions:</b> Region B and E</li>
-                    </ul>
-                </div>
-            """, unsafe_allow_html=True)
+        # TABLE 7: ART ADHERENCE GAPS
+        st.subheader("📉 Table 7: ART Adherence & Performance Gaps")
+        st.write("Total PLHIV remaining on ART show a 21% shortfall from targets.")
+        art_data = {
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Actual on ART": [58829, 22271, 34993, 115098, 37839, 83650, 56560],
+            "Gap to Target": [14069, 7076, 6913, 30948, 6819, 23532, 17919],
+            "Progress %": ["80.7%", "75.9%", "83.5%", "78.8%", "84.7%", "78.0%", "75.9%"]
+        }
+        st.table(pd.DataFrame(art_data))
 
         st.divider()
-        
-        # Detailed Facility Directory
         st.subheader("📍 Regional Facility Directory")
-        st.write("Below is the mapping of specific clinics to their respective procurement regions.")
+        st.write("Mapping local clinics to procurement regions based on CoJ Profile.")
         
+        # UPDATED REGIONS BASED ON YOUR MAP IMAGE
         r1, r2, r3 = st.columns(3)
         with r1:
-            st.markdown("""
-                <div class='region-card'>
-                    <b>Region A (Midrand/North)</b><br>
-                    • Bophelong Clinic<br>
-                    • Diepsloot South<br>
-                    • Ebony Park<br>
-                    • Rabie Ridge
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<div class='region-card'><b>Region A (Midrand/Diepsloot)</b><br>• Bophelong Clinic<br>• Diepsloot South<br>• Ebony Park<br>• Rabie Ridge</div>", unsafe_allow_html=True)
+            st.markdown("<div class='region-card'><b>Region B (Randburg/Rosebank)</b><br>• Berario Clinic<br>• Bosmont Clinic<br>• Parkhurst Clinic<br>• Windsor Clinic</div>", unsafe_allow_html=True)
         with r2:
-            st.markdown("""
-                <div class='region-card'>
-                    <b>Region D (Soweto)</b><br>
-                    • Doornkop<br>
-                    • Dobsonville<br>
-                    • Protea Glen<br>
-                    • Diepkloof
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<div class='region-card'><b>Region C (Roodepoort)</b><br>• Florida Clinic<br>• Bram Fischerville<br>• Zandspruit</div>", unsafe_allow_html=True)
+            st.markdown("<div class='region-card'><b>Region D (Soweto)</b><br>• Doornkop Clinic<br>• Dobsonville Clinic<br>• Protea Glen Clinic</div>", unsafe_allow_html=True)
         with r3:
-            st.markdown("""
-                <div class='region-card'>
-                    <b>Region F (Inner City)</b><br>
-                    • CBD Health Hub<br>
-                    • Jeppe Clinic<br>
-                    • Joubert Park<br>
-                    • 80 Albert Street
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<div class='region-card'><b>Region F (Inner City)</b><br>• Johannesburg CBD<br>• Jeppe Clinic<br>• South Gate Area</div>", unsafe_allow_html=True)
+            st.markdown("<div class='region-card'><b>Region G (Deep South)</b><br>• Orange Farm<br>• Ennerdale Clinic<br>• Lenasia Clinic</div>", unsafe_allow_html=True)
+        
+        st.divider()
+        # OFFICIAL HOSPITALS FROM YOUR DOCUMENT
+        st.subheader("🏥 Core Facility Network (Hospitals)")
+        h1, h2, h3 = st.columns(3)
+        h1.info("**Helen Joseph Hospital**")
+        h2.info("**Rahima Moosa Mother & Child**")
+        h3.info("**Chris Hani Baragwanath**")
 # --- 8. PAGE: TRANSACTION RECORDS (Internal Only) ---
 elif page == "📜 Transaction Records":
     st.title("📜 Internal Transaction Logs")
