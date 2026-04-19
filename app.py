@@ -13,8 +13,9 @@ st.markdown("""
         border-left: 6px solid #0D9488; margin-bottom: 25px;
     }
     .insight-box {
-        background-color: #FFFFFF; padding: 20px; border-radius: 10px;
-        border: 1px solid #E2E8F0; margin-bottom: 20px; text-align: justify;
+        background-color: #FFFFFF; padding: 25px; border-radius: 10px;
+        border: 1px solid #E2E8F0; margin-bottom: 25px; text-align: justify;
+        line-height: 1.6; color: #1E293B;
     }
     .region-card {
         background-color: #FFFFFF; padding: 20px; border-radius: 12px;
@@ -34,7 +35,7 @@ if "inventory" not in st.session_state:
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 3. SIDEBAR: AUTHENTICATION & LOCKING ---
+# --- 3. SIDEBAR: AUTHENTICATION ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=150)
 else:
@@ -42,7 +43,6 @@ else:
 
 user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
-# Logic for Internal Team
 if user_type == "Internal Executive/Technical Team":
     st.sidebar.markdown("### 🔐 Executive Login")
     current_role = st.sidebar.selectbox("Access Level:", [
@@ -61,47 +61,29 @@ if user_type == "Internal Executive/Technical Team":
 else:
     current_role = "Public Stakeholder"
 
-# --- 4. ACCESS CONTROL GATE ---
-# If Stakeholder and NOT Subscribed, they only see the Subscription Portal.
-# If Internal and Authenticated, they see everything.
-
+# --- 4. STRICT ACCESS GATE ---
 if user_type == "Public Stakeholder" and not st.session_state.subscribed:
     nav_options = ["📊 Subscription Portal"]
-    page = "📊 Subscription Portal" # Force them here
+    page = "📊 Subscription Portal"
 else:
     nav_options = ["🏠 Dashboard", "📍 Regional Network", "📊 Subscription Portal", "📈 Clinic Health Insights"]
     if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
         nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
     page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 5. PAGE LOGIC ---
-
-# FORCED SUBSCRIPTION PAGE
+# --- 5. PAGE: SUBSCRIPTION PORTAL (THE LOCK) ---
 if page == "📊 Subscription Portal":
     st.title("🛡️ Secure Data Access Portal")
     if not st.session_state.subscribed and user_type == "Public Stakeholder":
-        st.warning("🚨 Access Restricted: This system contains sensitive clinical and procurement data.")
-        st.info("To view the Dashboard, Regional Network, and Health Insights, a public subscription is required.")
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("""
-            ### Why Subscribe?
-            * Full access to Gauteng Regional Network.
-            * Real-time medication demand forecasting.
-            * HIV & TB clinical outcomes (Tables 4, 6, 7).
-            """)
-        with c2:
-            st.markdown("### Payment")
-            st.write("Monthly Access: **R850.00**")
-            if st.button("💳 Secure Payment & Unlock All Information"):
-                st.session_state.subscribed = True
-                st.balloons()
-                st.rerun()
+        st.warning("🚨 Access Restricted: Clinical and procurement data hidden.")
+        st.info("To view the Dashboard, Regional Network, and Health Insights, a subscription is required.")
+        if st.button("💳 Secure Payment & Unlock All Information"):
+            st.session_state.subscribed = True
+            st.rerun()
     else:
-        st.success("✅ Subscription Active. Use the sidebar to explore the full system.")
+        st.success("✅ Access Granted. Use the sidebar to navigate.")
 
-# DASHBOARD
+# --- 6. PAGE: DASHBOARD ---
 elif page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     st.markdown("""
@@ -117,7 +99,8 @@ elif page == "🏠 Dashboard":
                 At the core of our solution is an innovative, user-friendly application that integrates directly with 
                 the inventory systems of hospitals and clinics. This app continuously monitors medication stock levels in real time. 
                 Each time medication is dispensed, it is scanned by the healthcare provider, and the system instantly updates 
-                the inventory on the app.<br><br>
+                the inventory on the app. This live tracking capability allows for accurate visibility of stock levels, 
+                helping facilities anticipate shortages before they occur and enabling timely reordering from pharmaceutical suppliers.<br><br>
                 By automating and digitising the inventory management process, Eco-Chain reduces the likelihood of human error, 
                 miscounts, and delays in reporting low stock. This ensures that healthcare providers can make informed decisions quickly, 
                 improving operational efficiency and patient care outcomes.
@@ -125,7 +108,7 @@ elif page == "🏠 Dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-# REGIONAL NETWORK
+# --- 7. PAGE: REGIONAL NETWORK ---
 elif page == "📍 Regional Network":
     st.title("📍 Gauteng Regional Health Network")
     col1, col2, col3 = st.columns(3)
@@ -136,17 +119,24 @@ elif page == "📍 Regional Network":
     with col3:
         st.markdown("<div class='region-card'><h3>Region E, F & G</h3><hr><b>Clinics:</b> CBD Hub, Orange Farm, Ennerdale<br><br><b>Primary Hub:</b><br><span style='color:#0D9488;'>Rahima Moosa Mother & Child</span></div>", unsafe_allow_html=True)
 
-# HEALTH INSIGHTS
+# --- 8. PAGE: CLINIC HEALTH INSIGHTS (RESTORED EXACT TEXT) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights & Forecasting")
+    
+    # RESTORED ORIGINAL TEXT BLOCKS
     st.markdown("""
         <div class="insight-box">
             <b>Eco-Chain Procurement Solutions</b> leverages clinical health data to monitor treatment patterns, 
             prescription trends, and medication usage. In the South African context—where conditions such as 
-            HIV/AIDS and tuberculosis are prevalent—this enables healthcare facilities to accurately estimate 
+            HIV/AIDS, and tuberculosis are prevalent—this enables healthcare facilities to accurately estimate 
             the demand for chronic medication.<br><br>
+            For chronic treatments, the system uses patient data, refill cycles, and historical dispensing records 
+            to forecast future needs, ensuring uninterrupted access to medication. It also evaluates daily usage 
+            patterns and seasonal disease trends to predict demand for general and emergency medicines, 
+            allowing facilities to stay prepared.<br><br>
             Overall, these insights enhance operational efficiency, minimize shortages and waste, strengthen 
-            supplier relationships, and establish Eco-Chain as a dependable, data-driven solution.
+            supplier relationships, and establish Eco-Chain as a dependable, data-driven solution in the 
+            healthcare supply chain.
         </div>
     """, unsafe_allow_html=True)
 
@@ -157,6 +147,7 @@ elif page == "📈 Clinic Health Insights":
         "Positive": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
         "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
     }))
+    
     st.subheader("🫁 Table 4: Drug Sensitive TB Outcomes")
     st.table(pd.DataFrame({
         "Indicators": ["Success rate", "Death rate", "Failed rate", "Lost to follow-up"],
@@ -166,7 +157,7 @@ elif page == "📈 Clinic Health Insights":
         "Reg G": ["81.5%", "7.1%", "0.4%", "11.0%"]
     }))
 
-# INTERNAL REGISTRY
+# --- 9. INTERNAL: REGISTRY ---
 elif page == "💊 Medication Registry":
     st.title("💊 Medication Asset Registry")
     with st.form("mint_form"):
@@ -175,9 +166,9 @@ elif page == "💊 Medication Registry":
         quantity = st.number_input("Quantity", min_value=1)
         if st.form_submit_button("Mint Asset to Blockchain"):
             st.session_state.inventory.append({"Role": current_role, "Type": med_type, "Name": med_name, "Qty": quantity})
-            st.toast("Verified and pushed to blockchain.")
+            st.toast("Record verified and pushed to blockchain.")
 
-# INTERNAL LEDGER
+# --- 10. INTERNAL: LEDGER ---
 elif page == "📜 Transaction Records":
     st.title("📜 On-Chain Ledger History")
     if st.session_state.inventory:
@@ -186,3 +177,6 @@ elif page == "📜 Transaction Records":
         st.info("No recorded transactions.")
 
 st.sidebar.markdown("---")
+st.sidebar.caption(f"Eco-Chain v7.7 | Security Level: High")
+
+ 
