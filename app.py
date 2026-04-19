@@ -78,8 +78,7 @@ if page == "🏠 Dashboard":
                 miscounts, and delays in reporting low stock. This ensures that healthcare providers can make informed decisions quickly, 
                 improving operational efficiency and patient care outcomes.<br><br>
                 
-            </div>
-        </div>
+          
     """, unsafe_allow_html=True)
     
     # PRIVACY FILTER: Hide Notification Centre and Metrics from Stakeholders
