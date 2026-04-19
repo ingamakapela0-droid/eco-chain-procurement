@@ -16,9 +16,7 @@ st.markdown("""
         border-radius: 12px; border-top: 4px solid #0D9488;
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     }
-    .stButton>button {
-        background-color: #0D9488; color: white; border-radius: 8px;
-    }
+    .stButton>button { background-color: #0D9488; color: white; border-radius: 8px; }
     .about-box {
         background-color: #F1F5F9; padding: 25px; border-radius: 10px;
         border-left: 6px solid #0D9488; margin-bottom: 25px;
@@ -27,28 +25,19 @@ st.markdown("""
         background-color: #FFFFFF; padding: 15px; border-radius: 10px;
         border: 1px solid #E2E8F0; margin-bottom: 15px;
     }
-    .mission-text {
-        font-size: 1.05rem; line-height: 1.6; color: #1E293B; text-align: justify;
-    }
+    .mission-text { font-size: 1.05rem; line-height: 1.6; color: #1E293B; text-align: justify; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. BLOCKCHAIN INITIALIZATION ---
-w3 = Web3(Web3.HTTPProvider(config.RPC_URL))
-contract = w3.eth.contract(address=config.CONTRACT_ADDRESS, abi=config.CONTRACT_ABI)
+# --- 2. INITIALIZE SESSION STATE ---
+if "subscribed" not in st.session_state:
+    st.session_state.subscribed = False
 
-# --- 3. SIDEBAR: IDENTITY & NAVIGATION FILTER ---
+# --- 3. SIDEBAR: IDENTITY & ROLE-BASED NAVIGATION ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=120)
 st.sidebar.title("Eco-Chain")
 
-# Wallet Connectivity
-user_address = streamlit_js_eval(js_expressions="window.ethereum ? window.ethereum.selectedAddress : null", key="wallet_check")
-if not user_address:
-    if st.sidebar.button("🔐 Connect MetaMask"):
-        streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' })")
-
-st.sidebar.divider()
 st.sidebar.subheader("👤 User Profile")
 current_role = st.sidebar.selectbox("Access Level:", [
     "Public Stakeholder (Read-Only)",
@@ -57,22 +46,20 @@ current_role = st.sidebar.selectbox("Access Level:", [
     "Finance Dept"
 ])
 
-# DYNAMIC NAVIGATION LOGIC (Role-Based Access Control)
-# Public only sees Dashboard and Insights. CEO sees everything.
-nav_options = ["🏠 Dashboard", "📈 Clinic Health Insights"]
+# Define navigation based on your rules: Stakeholders can see Subscription + Insights
+nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📈 Clinic Health Insights"]
 
 if current_role == "Management (CEO)":
-    nav_options += ["📊 Subscription Portal", "💊 Medication Registry", "📜 Transaction Records", "🏥 Hospital Management"]
+    nav_options += ["💊 Medication Registry", "📜 Transaction Records", "🏥 Hospital Management"]
 elif current_role in ["Operations (COO)", "Finance Dept"]:
     nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
 
 page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 4. PAGE: DASHBOARD (Restored Full Overview) ---
+# --- 4. PAGE: DASHBOARD (Full Mission Overview Included) ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     
-    # YOUR FULL OVERVIEW TEXT INTEGRATED HERE
     st.markdown(f"""
         <div class="about-box">
             <h3>Mission Overview & System Impact</h3>
@@ -96,85 +83,68 @@ if page == "🏠 Dashboard":
     """, unsafe_allow_html=True)
     
     col_main, col_side = st.columns([2, 1])
-    
     with col_main:
-        st.subheader("🔗 Blockchain Strategy")
-        st.write("""Eco-Chain ensures that patients receive sufficient and uninterrupted medication 
-        during their stay. It strengthens healthcare delivery systems and contributes to more reliable 
-        and equitable access to essential medicines, particularly in underserved and rural communities.""")
-        
-        f1, f2, f3 = st.columns(3)
-        f1.info("**Trustless Escrow**")
-        f2.info("**Immutable Transparency**")
-        f3.info("**Real-Time Sync**")
-        
-        st.divider()
+        st.subheader("🔗 System Status")
         c1, c2, c3 = st.columns(3)
         c1.metric("Integrated Clinics", "42", "Gauteng")
         c2.metric("Verified Txns", "1,024", "Blockchain")
         c3.metric("System Health", "Optimal", "Sepolia")
-
     with col_side:
         st.subheader("⚡ Notification Centre")
-        if st.button("🔔 Trigger Stock Scan"):
-            st.toast("Scanning blockchain for low stock levels...", icon="🔍")
         st.error("**Urgent Alert:** Region F stock below 20%")
         st.warning("**Temp Warning:** Batch #044 (Insulin)")
 
 # --- 5. PAGE: SUBSCRIPTION PORTAL ---
 elif page == "📊 Subscription Portal":
-    st.title("🛡️ External Stakeholder Access")
+    st.title("🛡️ Researcher Subscription Portal")
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("<div style='background-color:#E0F2F1; padding:20px; border-radius:12px; border:2px dashed #0D9488; text-align:center;'>"
-                    "<h3>Researcher Access</h3><p>Anonymized Health Trends</p><h4>0.05 ETH / Mo</h4></div>", unsafe_allow_html=True)
-        
-        if st.button("Subscribe via MetaMask"):
-            # This simulates the payment being successful
+        st.markdown("<div style='background-color:#E0F2F1; padding:20px; border-radius:12px; border:2px dashed #0D9488;'><h3>Researcher Tier</h3><p>Access anonymized health trends.</p><h4>0.05 ETH / Mo</h4></div>", unsafe_allow_html=True)
+        if st.session_state.subscribed:
+            st.success("✅ Subscription Active")
+        elif st.button("🔌 Subscribe via MetaMask"):
             st.session_state.subscribed = True
             st.balloons()
-            st.success("Transaction Confirmed! You now have access to Clinic Health Insights.")
-# --- 6. PAGE: MEDICATION REGISTRY (Internal Only) ---
+            st.success("Success! Insights Unlocked.")
+    with col_b:
+        if current_role == "Management (CEO)":
+            st.subheader("⚙️ Admin Tools")
+            st.write("Subscriber Total: 124")
+
+# --- 6. PAGE: MEDICATION REGISTRY (Internal) ---
 elif page == "💊 Medication Registry":
     st.title("📝 Inventory Management")
     st.success(f"Management Access Verified: {current_role}")
-    tab1, tab2 = st.tabs(["➕ Add New Medication", "✏️ Edit Medication"])
-    with tab1:
-        with st.form("add_form"):
-            st.text_input("Product Name")
-            st.number_input("Initial Stock", min_value=0)
-            st.form_submit_button("Commit to Blockchain")
+    st.tabs(["➕ Add New Medication", "✏️ Edit Medication"])
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (With Subscription Check) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Subscription Locked) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Insights & Facility Directory")
-
-    # 1. Check if the user has "subscribed" in the Portal
-    # In a real app, this would check the Smart Contract on Sepolia
-    if "subscribed" not in st.session_state:
-        st.session_state.subscribed = False
-
     if not st.session_state.subscribed and current_role == "Public Stakeholder (Read-Only)":
-        st.warning("🔒 Restricted Access: This data is reserved for subscribed stakeholders.")
-        st.info("Please visit the **Subscription Portal** to activate your researcher access via MetaMask.")
-        
-        # Show a "Locked" preview (Optional)
-        st.image("https://via.placeholder.com/800x200.png?text=Detailed+Analytics+Locked+-+Subscription+Required")
-    
+        st.warning("🔒 Restricted Access: Subscription required to view detailed analytics.")
+        st.info("Visit the Subscription Portal to unlock this page.")
     else:
-        # If they ARE subscribed OR they are the CEO/COO
-        st.success("✅ Subscription Active: Accessing Real-Time Regional Data")
-        
-        # The Graphs
-        cg1, cg2 = st.columns(2)
-        with cg1: st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
-        with cg2: st.area_chart({"A": 14069, "B": 7076, "C": 6913, "D": 30948, "E": 6819, "F": 23532, "G": 17919})
-        
+        st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
         st.divider()
         st.subheader("📍 Regional Facility Directory")
-        
-        # (Insert your clean 3-column region cards here)
         r1, r2, r3 = st.columns(3)
         with r1:
-            st.markdown("<div class='region-card'><b>Region A (Midrand)</b><br>• Bophelong Clinic<br>• Diepsloot South</div>", unsafe_allow_html=True)
-        # ... and so on for r2 and r3
+            st.markdown("<div class='region-card'><b>Region A</b><br>• Bophelong<br>• Diepsloot South</div>", unsafe_allow_html=True)
+        with r2:
+            st.markdown("<div class='region-card'><b>Region D</b><br>• Soweto Hub<br>• Dobsonville</div>", unsafe_allow_html=True)
+        with r3:
+            st.markdown("<div class='region-card'><b>Region F</b><br>• CBD Health<br>• Jeppe Clinic</div>", unsafe_allow_html=True)
+
+# --- 8. PAGE: TRANSACTION RECORDS (Internal) ---
+elif page == "📜 Transaction Records":
+    st.title("📜 Internal Transaction Logs")
+    st.table([{"Time": "21:05", "User": "CEO", "Action": "Added Tenofovir"}])
+
+# --- 9. PAGE: HOSPITAL MANAGEMENT ---
+elif page == "🏥 Hospital Management":
+    st.title("🏥 Gauteng Hospital Network")
+    for h in ["Chris Hani Baragwanath", "Charlotte Maxeke", "Steve Biko"]:
+        st.write(f"- {h}")
+
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Eco-Chain v4.5 | {current_role}")
