@@ -24,11 +24,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SESSION STATE ---
+# --- 2. SESSION STATE (Handles Subscription) ---
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 3. SIDEBAR, LOGO & FINANCE DEPT ---
+# --- 3. SIDEBAR, LOGO & ACCESS LEVELS ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=150)
 else:
@@ -72,6 +72,7 @@ if page == "🏠 Dashboard":
         </div>
     """, unsafe_allow_html=True)
     
+    # Internal metrics remain hidden from Stakeholders
     if current_role != "Public Stakeholder (Read-Only)":
         c1, c2, c3 = st.columns(3)
         c1.metric("Integrated Clinics", "42", "Gauteng")
@@ -83,9 +84,14 @@ if page == "🏠 Dashboard":
 # --- 5. PAGE: SUBSCRIPTION PORTAL ---
 elif page == "📊 Subscription Portal":
     st.title("🛡️ Researcher Subscription Portal")
-    if st.button("Subscribe via MetaMask (0.05 ETH)"):
-        st.session_state.subscribed = True
-        st.balloons()
+    if st.session_state.subscribed:
+        st.success("✅ Subscription Active: You now have access to Clinic Health Insights.")
+    else:
+        st.info("Subscribe to unlock anonymized regional HIV and TB data tables.")
+        if st.button("Subscribe via MetaMask (0.05 ETH)"):
+            st.session_state.subscribed = True
+            st.balloons()
+            st.rerun()
 
 # --- 6. PAGE: MEDICATION REGISTRY ---
 elif page == "💊 Medication Registry":
@@ -97,13 +103,20 @@ elif page == "💊 Medication Registry":
         st.number_input("Unit Price (ETH)", format="%.6f")
         st.form_submit_button("Commit to Blockchain")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (RESTORED FULL TABLES) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (LOCKED BEHIND SUBSCRIPTION) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights")
-    if not st.session_state.subscribed and current_role == "Public Stakeholder (Read-Only)":
-        st.warning("🔒 Restricted: Subscription required.")
+    
+    # Logic: Show data ONLY if user is NOT a public stakeholder OR if they have SUBSCRIBED
+    is_internal = current_role in ["Management (CEO)", "Operations (COO)", "Finance Dept"]
+    
+    if not st.session_state.subscribed and not is_internal:
+        st.warning("🔒 Restricted: Detailed clinical data requires a Researcher Subscription.")
+        st.info("Please visit the **Subscription Portal** to unlock Table 4, 6, and 7.")
     else:
-        # FULL HIV TABLE (RESTORED)
+        st.success(f"✅ Access Granted: {current_role}")
+        
+        # FULL HIV TABLE
         st.subheader("📊 Table 6: HIV Positive Test Results")
         st.table(pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
@@ -112,7 +125,7 @@ elif page == "📈 Clinic Health Insights":
             "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
         }))
 
-        # FULL ART TABLE (RESTORED)
+        # FULL ART TABLE
         st.subheader("📉 Table 7: PLHIV remaining on ART (Adherence)")
         st.table(pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
@@ -121,7 +134,7 @@ elif page == "📈 Clinic Health Insights":
             "Progress %": ["80.7%", "75.9%", "83.5%", "78.8%", "84.7%", "78.0%", "75.9%"]
         }))
 
-        # TB TABLE
+        # FULL TB TABLE
         st.subheader("🫁 Table 4: Drug Sensitive TB Outcomes")
         st.table(pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
@@ -146,7 +159,7 @@ elif page == "📈 Clinic Health Insights":
 # --- 8. PAGE: TRANSACTION RECORDS ---
 elif page == "📜 Transaction Records":
     st.title("📜 Transaction Logs")
-    st.table([{"Time": "21:05", "User": current_role, "Action": "Viewed Records"}])
+    st.table([{"Time": "21:05", "User": current_role, "Action": "System Audit"}])
 
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Eco-Chain v5.9 | {current_role}")
+st.sidebar.caption(f"Eco-Chain v6.0 | {current_role}")
