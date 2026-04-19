@@ -35,35 +35,49 @@ if "inventory" not in st.session_state:
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 3. SIDEBAR: ROLE SELECTION & INTERNAL AUTH ---
+# --- 3. SIDEBAR: ROLE SELECTION & EXECUTIVE AUTH ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=150)
 else:
     st.sidebar.title("🌿 Eco-Chain")
 
-user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Staff (Management/Finance)"])
+user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
-if user_type == "Internal Staff (Management/Finance)":
-    st.sidebar.markdown("### 🦊 Internal Security")
+if user_type == "Internal Executive/Technical Team":
+    st.sidebar.markdown("### 🔐 Internal Authentication")
+    
+    # Updated Role Options
+    current_role = st.sidebar.selectbox("Select Access Level:", [
+        "CEO (Chief Executive Officer)",
+        "COO (Chief Operations Officer)",
+        "Finance Director",
+        "System Developer",
+        "Marketing Director"
+    ])
+
     if not st.session_state.authenticated:
-        if st.sidebar.button("Sign In with MetaMask"):
+        if st.sidebar.button(f"Sign In as {current_role.split(' ')[0]}"):
             st.session_state.authenticated = True
             st.rerun()
     else:
-        st.sidebar.success(f"Connected: {USER_WALLET[:10]}...")
+        st.sidebar.success(f"Verified: {current_role}")
+        st.sidebar.caption(f"Wallet: {USER_WALLET[:12]}...")
         if st.sidebar.button("Sign Out"):
             st.session_state.authenticated = False
             st.rerun()
+else:
+    current_role = "Public Stakeholder"
 
 # --- 4. NAVIGATION LOGIC ---
 nav_options = ["🏠 Dashboard", "📍 Regional Network", "📊 Subscription Portal", "📈 Clinic Health Insights"]
 
-if user_type == "Internal Staff (Management/Finance)" and st.session_state.authenticated:
+# Internal tools are visible to the entire Executive/Technical team once authenticated
+if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
     nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
 
 page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 5. PAGE: DASHBOARD ---
+# --- 5. PAGE: DASHBOARD (MISSION STATEMENT) ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     st.markdown("""
@@ -112,11 +126,10 @@ elif page == "📊 Subscription Portal":
     else:
         st.success("✅ Subscription Active. Clinical database unlocked.")
 
-# --- 8. PAGE: CLINIC HEALTH INSIGHTS (NEW TEXT ADDED HERE) ---
+# --- 8. PAGE: CLINIC HEALTH INSIGHTS (INTEGRATED TEXT) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights & Forecasting")
     
-    # Integrated Strategic Text
     st.markdown("""
         <div class="insight-box">
             <b>Eco-Chain Procurement Solutions</b> leverages clinical health data to monitor treatment patterns, 
@@ -136,11 +149,12 @@ elif page == "📈 Clinic Health Insights":
     if not st.session_state.subscribed:
         st.warning("🔒 Restricted: Detailed HIV/TB statistical tables require an active subscription.")
     else:
-        st.subheader("📊 Table 6 & 7: HIV Data (DHIS 2020)")
+        st.subheader("📊 Table 6: HIV Positivity (DHIS 2020)")
         st.table(pd.DataFrame({
             "Region": ["A", "B", "C", "D", "E", "F", "G"],
-            "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"],
-            "Gap to Target": [14069, 7076, 6913, 30948, 6819, 23532, 17919]
+            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
+            "Positive": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+            "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
         }))
         st.subheader("🫁 Table 4: Drug Sensitive TB Outcomes")
         st.table(pd.DataFrame({
@@ -151,24 +165,30 @@ elif page == "📈 Clinic Health Insights":
             "Reg G": ["81.5%", "7.1%", "0.4%", "11.0%"]
         }))
 
-# --- 9. INTERNAL PAGE: MEDICATION REGISTRY ---
+# --- 9. INTERNAL: MEDICATION REGISTRY ---
 elif page == "💊 Medication Registry":
-    st.title("💊 Internal Registry (Blockchain Enabled)")
+    st.title("💊 Medication Asset Registry")
+    st.write(f"Authorized by: **{current_role}**")
     with st.form("mint_form"):
         med_type = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)"])
         med_name = st.text_input("Medication Name")
         quantity = st.number_input("Quantity", min_value=1)
-        if st.form_submit_button("Mint Asset to MetaMask"):
-            st.session_state.inventory.append({"Type": med_type, "Name": med_name, "Qty": quantity})
-            st.toast("Transaction sent to MetaMask.")
+        if st.form_submit_button("Mint Asset to Blockchain"):
+            st.session_state.inventory.append({
+                "Role": current_role, 
+                "Type": med_type, 
+                "Name": med_name, 
+                "Qty": quantity
+            })
+            st.toast("Record verified and pushed to blockchain.")
 
-# --- 10. INTERNAL PAGE: TRANSACTION RECORDS ---
+# --- 10. INTERNAL: TRANSACTION RECORDS ---
 elif page == "📜 Transaction Records":
-    st.title("📜 Ledger History")
+    st.title("📜 On-Chain Ledger History")
     if st.session_state.inventory:
         st.table(pd.DataFrame(st.session_state.inventory))
     else:
-        st.info("No blockchain transactions recorded yet.")
+        st.info("No verified transactions recorded yet.")
 
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Eco-Chain v7.3 | Secure Node: Gauteng-01")
+st.sidebar.caption(f"Eco-Chain v7.5 | Executive Node")
