@@ -24,11 +24,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SESSION STATE (Handles Subscription) ---
+# --- 2. SESSION STATE ---
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 3. SIDEBAR, LOGO & ACCESS LEVELS ---
+# --- 3. SIDEBAR, LOGO & FINANCE DEPT ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=150)
 else:
@@ -47,7 +47,7 @@ if current_role in ["Management (CEO)", "Operations (COO)", "Finance Dept"]:
 
 page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 4. PAGE: DASHBOARD (FULL 3-PARAGRAPH MISSION) ---
+# --- 4. PAGE: DASHBOARD (LOCKED MISSION STATEMENT) ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     st.markdown(f"""
@@ -72,26 +72,19 @@ if page == "🏠 Dashboard":
         </div>
     """, unsafe_allow_html=True)
     
-    # Internal metrics remain hidden from Stakeholders
     if current_role != "Public Stakeholder (Read-Only)":
         c1, c2, c3 = st.columns(3)
         c1.metric("Integrated Clinics", "42", "Gauteng")
         c2.metric("Verified Txns", "1,024", "Blockchain")
         c3.metric("System Health", "Optimal", "Sepolia")
-        st.subheader("⚡ Notification Centre")
-        st.error("**Urgent Alert:** Region F stock below 20%")
 
 # --- 5. PAGE: SUBSCRIPTION PORTAL ---
 elif page == "📊 Subscription Portal":
-    st.title("🛡️ Researcher Subscription Portal")
-    if st.session_state.subscribed:
-        st.success("✅ Subscription Active: You now have access to Clinic Health Insights.")
-    else:
-        st.info("Subscribe to unlock anonymized regional HIV and TB data tables.")
-        if st.button("Subscribe via MetaMask (0.05 ETH)"):
-            st.session_state.subscribed = True
-            st.balloons()
-            st.rerun()
+    st.title("🛡️ Subscription Portal")
+    if st.button("Subscribe via MetaMask (0.05 ETH)"):
+        st.session_state.subscribed = True
+        st.balloons()
+        st.rerun()
 
 # --- 6. PAGE: MEDICATION REGISTRY ---
 elif page == "💊 Medication Registry":
@@ -103,21 +96,19 @@ elif page == "💊 Medication Registry":
         st.number_input("Unit Price (ETH)", format="%.6f")
         st.form_submit_button("Commit to Blockchain")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (LOCKED BEHIND SUBSCRIPTION) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (EXACT TB & HIV TABLES) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights")
     
-    # Logic: Show data ONLY if user is NOT a public stakeholder OR if they have SUBSCRIBED
     is_internal = current_role in ["Management (CEO)", "Operations (COO)", "Finance Dept"]
     
     if not st.session_state.subscribed and not is_internal:
         st.warning("🔒 Restricted: Detailed clinical data requires a Researcher Subscription.")
-        st.info("Please visit the **Subscription Portal** to unlock Table 4, 6, and 7.")
     else:
         st.success(f"✅ Access Granted: {current_role}")
         
-        # FULL HIV TABLE
-        st.subheader("📊 Table 6: HIV Positive Test Results")
+        # HIV TABLES (Restored)
+        st.subheader("📊 Table 6: HIV positive test results by region (DHIS 2020)")
         st.table(pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
             "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
@@ -125,41 +116,14 @@ elif page == "📈 Clinic Health Insights":
             "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
         }))
 
-        # FULL ART TABLE
-        st.subheader("📉 Table 7: PLHIV remaining on ART (Adherence)")
+        st.subheader("📉 Table 7: Total PLHIV remaining on ART against the target")
         st.table(pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
             "Actual on ART": [58829, 22271, 34993, 115098, 37839, 83650, 56560],
             "Gap to Target": [14069, 7076, 6913, 30948, 6819, 23532, 17919],
-            "Progress %": ["80.7%", "75.9%", "83.5%", "78.8%", "84.7%", "78.0%", "75.9%"]
-        }))
+            "Progress %": ["8
+  
 
-        # FULL TB TABLE
-        st.subheader("🫁 Table 4: Drug Sensitive TB Outcomes")
-        st.table(pd.DataFrame({
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-            "Success Rate %": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
-            "Death Rate %": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"],
-            "Lost to Follow-up %": ["4.8%", "5.5%", "8.2%", "10.9%", "6.7%", "9.6%", "11.0%"]
-        }))
 
-        st.divider()
-        st.subheader("📍 Regional Network")
-        r1, r2, r3 = st.columns(3)
-        with r1:
-            st.markdown("<div class='region-card'><b>Region A & B</b><br>• Bophelong<br>• Diepsloot<br>• Berario</div>", unsafe_allow_html=True)
-            st.info("**Helen Joseph Hospital**")
-        with r2:
-            st.markdown("<div class='region-card'><b>Region C & D</b><br>• Florida<br>• Soweto Hub<br>• Dobsonville</div>", unsafe_allow_html=True)
-            st.info("**Chris Hani Baragwanath**")
-        with r3:
-            st.markdown("<div class='region-card'><b>Region E, F & G</b><br>• CBD Hub<br>• Orange Farm</div>", unsafe_allow_html=True)
-            st.info("**Rahima Moosa Mother & Child**")
 
-# --- 8. PAGE: TRANSACTION RECORDS ---
-elif page == "📜 Transaction Records":
-    st.title("📜 Transaction Logs")
-    st.table([{"Time": "21:05", "User": current_role, "Action": "System Audit"}])
-
-st.sidebar.markdown("---")
-st.sidebar.caption(f"Eco-Chain v6.0 | {current_role}")
+       
