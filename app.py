@@ -145,14 +145,21 @@ elif page == "📈 Clinic Health Insights":
     
     st.divider()
     st.subheader("📍 Regional Facility Directory")
+    
+    # Clean Column Layout for Regions
     r1, r2, r3 = st.columns(3)
+    
     with r1:
         st.markdown("<div class='region-card'><b>Region A (Midrand)</b><br>• Bophelong Clinic<br>• Diepsloot South<br>• Ebony Park<br>• Rabie Ridge</div>", unsafe_allow_html=True)
-   with r2:
+        st.markdown("<div class='region-card'><b>Region B (Randburg)</b><br>• Berario<br>• Parkhurst<br>• Randburg</div>", unsafe_allow_html=True)
+
+    with r2:
         st.markdown("<div class='region-card'><b>Region D (Soweto)</b><br>• Doornkop<br>• Dobsonville<br>• Protea Glen<br>• Diepkloof</div>", unsafe_allow_html=True)
         st.markdown("<div class='region-card'><b>Region E (Sandton)</b><br>• Alexandra<br>• Sandton<br>• Wynberg</div>", unsafe_allow_html=True)
 
     with r3:
         st.markdown("<div class='region-card'><b>Region F (Inner City)</b><br>• CBD Health Hub<br>• Jeppe Clinic<br>• 80 Albert Street<br>• Joubert Park</div>", unsafe_allow_html=True)
         st.markdown("<div class='region-card'><b>Region G (Deep South)</b><br>• Orange Farm<br>• Ennerdale<br>• Lenasia</div>", unsafe_allow_html=True)
-  
+
+
+   
