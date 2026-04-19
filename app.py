@@ -1,29 +1,4 @@
-### CRITICAL HARD-STOP ERROR ###
-def eco_chain_security_gate()
-    # Missing the colon (:) above causes a SyntaxError
-    # The app will crash in the terminal immediately.
-    break_the_system = True
-###############################import streamlit as st
-# --- SIMULATED BLOCKCHAIN ERROR FOR DEMONSTRATION ---
-st.divider()
-st.subheader("🛠️ Developer Debug Tools")
-st.write("Use this to test the system's response to a failed Blockchain transaction.")
-
-if st.button("🚨 Simulate Failed Contract Transaction"):
-    with st.spinner("Communicating with Ethereum Sepolia..."):
-        # We simulate a "Revert" which happens in Solidity when a 'require' statement fails
-        import time
-        time.sleep(2) # Makes it look like it's actually checking the network
-        
-        st.error("❌ **Web3 Error: Execution Reverted**")
-        st.markdown("""
-            **Error Details:**
-            * **Reason:** `UnauthorizedAccess()`
-            * **Contract:** `0x71C...a2b`
-            * **Status:** Transaction failed to mine.
-            
-            *The system blocked this action because the MetaMask signature does not match the Admin Registry.*
-        """)
+import streamlit as st
 from web3 import Web3
 from streamlit_js_eval import streamlit_js_eval
 import config
@@ -64,6 +39,12 @@ st.markdown("""
         border: 1px solid #E2E8F0;
         margin-bottom: 15px;
     }
+    .mission-text {
+        font-size: 1.05rem;
+        line-height: 1.6;
+        color: #1E293B;
+        text-align: justify;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -76,7 +57,6 @@ if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=120)
 st.sidebar.title("Eco-Chain")
 
-# Wallet Connectivity
 user_address = streamlit_js_eval(js_expressions="window.ethereum ? window.ethereum.selectedAddress : null", key="wallet_check")
 if not user_address:
     if st.sidebar.button("🔐 Connect MetaMask"):
@@ -85,8 +65,6 @@ else:
     st.sidebar.success(f"Connected: {user_address[:6]}...{user_address[-4:]}")
 
 st.sidebar.divider()
-
-# RESTORED: Manual Login for Presentation
 st.sidebar.subheader("👤 User Profile")
 current_role = st.sidebar.selectbox("Access Level:", [
     "Management (CEO)", 
@@ -105,23 +83,41 @@ page = st.sidebar.radio("Navigation", [
     "🏥 Hospital Management"
 ])
 
-# --- 4. PAGE: DASHBOARD (Restored About & Notifications) ---
+# --- 4. PAGE: DASHBOARD (Updated with your full overview) ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     
+    # MISSION OVERVIEW (Your full text integrated here)
     st.markdown("""
         <div class="about-box">
-            <h3>Mission: Eco-Chain Procurement Solutions</h3>
-            <p>Eco-Chain acts as a <b>digital bridge</b> between healthcare facilities and pharmaceutical suppliers. 
-            By utilizing <b>Ethereum Smart Contracts</b>, we automate inventory thresholds and secure payments 
-            via a trustless escrow system to prevent medication stockouts in Gauteng clinics.</p>
+            <h3>System Overview & Mission</h3>
+            <div class="mission-text">
+                <b>Eco-Chain Procurement Solutions</b> is designed to address the persistent and often abrupt shortages 
+                of medication experienced at local clinics, rural hospitals, and other healthcare facilities. 
+                These shortages not only disrupt the delivery of essential healthcare services but also place patients 
+                at significant risk, particularly those who rely on consistent access to chronic medication. 
+                Our solution positions Eco-Chain as a vital bridge between healthcare institutions and pharmaceutical companies, 
+                ensuring a more efficient, transparent, and responsive supply chain.<br><br>
+                At the core of our solution is an innovative, user-friendly application that integrates directly with 
+                the inventory systems of hospitals and clinics. This app continuously monitors medication stock levels in real time. 
+                Each time medication is dispensed, it is scanned by the healthcare provider, and the system instantly updates 
+                the inventory on the app. This live tracking capability allows for accurate visibility of stock levels, 
+                helping facilities anticipate shortages before they occur and enabling timely reordering from pharmaceutical suppliers.<br><br>
+                By automating and digitising the inventory management process, Eco-Chain reduces the likelihood of 
+                human error, miscounts, and delays in reporting low stock. This ensures that healthcare providers 
+                can make informed decisions quickly, improving operational efficiency and patient care outcomes.
+            </div>
         </div>
     """, unsafe_allow_html=True)
     
     col_main, col_side = st.columns([2, 1])
     
     with col_main:
-        st.subheader("🔗 Core Blockchain Features")
+        st.subheader("🔗 Blockchain Advantage")
+        st.write("""Furthermore, it ensures that admitted patients receive sufficient and uninterrupted medication 
+        during their stay, which is critical for effective treatment and recovery. Eco-Chain enhances coordination 
+        between supply and demand, contributing to more reliable and equitable access to essential medicines.""")
+        
         f1, f2, f3 = st.columns(3)
         f1.info("**Trustless Escrow**")
         f2.info("**Immutable Transparency**")
@@ -152,7 +148,7 @@ elif page == "📊 Subscription Portal":
         st.subheader("🔗 API Integration")
         st.code("X-ECO-CHAIN-KEY: 8f2b-92ea-44bc-918d")
 
-# --- 6. PAGE: MEDICATION REGISTRY (CEO/COO Access Only) ---
+# --- 6. PAGE: MEDICATION REGISTRY ---
 elif page == "💊 Medication Registry":
     st.title("📝 Inventory Management")
     if "CEO" in current_role or "COO" in current_role:
@@ -169,39 +165,31 @@ elif page == "💊 Medication Registry":
         with tab2:
             st.subheader("Update Existing Records")
             st.selectbox("Select Medication:", ["Tenofovir", "Insulin", "Amoxicillin"])
-            st.number_input("New Stock Level")
-            st.button("Update Parameters")
+            st.button("Confirm Update")
     else:
         st.error("🚫 Access Denied. Only CEO or COO can access this registry.")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Fixed Regional Layout) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Insights & Facility Directory")
-    
-    # Graphs
     cg1, cg2 = st.columns(2)
     with cg1: st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
     with cg2: st.area_chart({"A": 14069, "B": 7076, "C": 6913, "D": 30948, "E": 6819, "F": 23532, "G": 17919})
     
     st.divider()
     st.subheader("📍 Regional Facility Directory")
-    
-    # Clean Column Layout for Regions
     r1, r2, r3 = st.columns(3)
-    
     with r1:
         st.markdown("<div class='region-card'><b>Region A (Midrand)</b><br>• Bophelong Clinic<br>• Diepsloot South<br>• Ebony Park<br>• Rabie Ridge</div>", unsafe_allow_html=True)
         st.markdown("<div class='region-card'><b>Region B (Randburg)</b><br>• Berario<br>• Parkhurst<br>• Randburg</div>", unsafe_allow_html=True)
-
     with r2:
         st.markdown("<div class='region-card'><b>Region D (Soweto)</b><br>• Doornkop<br>• Dobsonville<br>• Protea Glen<br>• Diepkloof</div>", unsafe_allow_html=True)
         st.markdown("<div class='region-card'><b>Region E (Sandton)</b><br>• Alexandra<br>• Sandton<br>• Wynberg</div>", unsafe_allow_html=True)
-
     with r3:
         st.markdown("<div class='region-card'><b>Region F (Inner City)</b><br>• CBD Health Hub<br>• Jeppe Clinic<br>• 80 Albert Street<br>• Joubert Park</div>", unsafe_allow_html=True)
         st.markdown("<div class='region-card'><b>Region G (Deep South)</b><br>• Orange Farm<br>• Ennerdale<br>• Lenasia</div>", unsafe_allow_html=True)
 
-# --- 8. PAGE: TRANSACTION RECORDS (Removed 'Ledger') ---
+# --- 8. PAGE: TRANSACTION RECORDS ---
 elif page == "📜 Transaction Records":
     st.title("📜 Transaction Records")
     df = pd.DataFrame([
@@ -213,13 +201,9 @@ elif page == "📜 Transaction Records":
 # --- 9. PAGE: HOSPITAL MANAGEMENT ---
 elif page == "🏥 Hospital Management":
     st.title("🏥 Gauteng Hospital Network")
-    hospitals = [
-        "Chris Hani Baragwanath", "Charlotte Maxeke", "Steve Biko Academic", 
-        "Helen Joseph", "Kalafong Hospital", "Tembisa Hospital", 
-        "Leratong Hospital", "George Mukhari"
-    ]
+    hospitals = ["Chris Hani Baragwanath", "Charlotte Maxeke", "Steve Biko Academic", "Helen Joseph", "Kalafong Hospital", "Tembisa Hospital", "Leratong Hospital", "George Mukhari"]
     for h in hospitals:
         st.markdown(f"- **{h}**")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain Procurement | v4.0")
+st.sidebar.caption("Eco-Chain Procurement | v4.1")
