@@ -121,12 +121,19 @@ if page == "🏠 Dashboard":
         st.error("**Urgent Alert:** Region F stock below 20%")
         st.warning("**Temp Warning:** Batch #044 (Insulin)")
 
-# --- 5. PAGE: SUBSCRIPTION PORTAL (CEO ONLY) ---
+# --- 5. PAGE: SUBSCRIPTION PORTAL ---
 elif page == "📊 Subscription Portal":
-    st.title("🛡️ External Stakeholder Management")
-    st.write("Review and authorize third-party researchers and API access keys.")
-    st.code("X-ECO-CHAIN-KEY: 8f2b-92ea-44bc-918d", language="text")
-
+    st.title("🛡️ External Stakeholder Access")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("<div style='background-color:#E0F2F1; padding:20px; border-radius:12px; border:2px dashed #0D9488; text-align:center;'>"
+                    "<h3>Researcher Access</h3><p>Anonymized Health Trends</p><h4>0.05 ETH / Mo</h4></div>", unsafe_allow_html=True)
+        
+        if st.button("Subscribe via MetaMask"):
+            # This simulates the payment being successful
+            st.session_state.subscribed = True
+            st.balloons()
+            st.success("Transaction Confirmed! You now have access to Clinic Health Insights.")
 # --- 6. PAGE: MEDICATION REGISTRY (Internal Only) ---
 elif page == "💊 Medication Registry":
     st.title("📝 Inventory Management")
@@ -138,28 +145,36 @@ elif page == "💊 Medication Registry":
             st.number_input("Initial Stock", min_value=0)
             st.form_submit_button("Commit to Blockchain")
 
-# --- 7. PAGE: CLINIC HEALTH INSIGHTS (Public Access) ---
+# --- 7. PAGE: CLINIC HEALTH INSIGHTS (With Subscription Check) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Insights & Facility Directory")
-    st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
+
+    # 1. Check if the user has "subscribed" in the Portal
+    # In a real app, this would check the Smart Contract on Sepolia
+    if "subscribed" not in st.session_state:
+        st.session_state.subscribed = False
+
+    if not st.session_state.subscribed and current_role == "Public Stakeholder (Read-Only)":
+        st.warning("🔒 Restricted Access: This data is reserved for subscribed stakeholders.")
+        st.info("Please visit the **Subscription Portal** to activate your researcher access via MetaMask.")
+        
+        # Show a "Locked" preview (Optional)
+        st.image("https://via.placeholder.com/800x200.png?text=Detailed+Analytics+Locked+-+Subscription+Required")
     
-    st.divider()
-    st.subheader("📍 Regional Facility Directory")
-    
-    # Clean Column Layout for Regions
-    r1, r2, r3 = st.columns(3)
-    
-    with r1:
-        st.markdown("<div class='region-card'><b>Region A (Midrand)</b><br>• Bophelong Clinic<br>• Diepsloot South<br>• Ebony Park<br>• Rabie Ridge</div>", unsafe_allow_html=True)
-        st.markdown("<div class='region-card'><b>Region B (Randburg)</b><br>• Berario<br>• Parkhurst<br>• Randburg</div>", unsafe_allow_html=True)
-
-    with r2:
-        st.markdown("<div class='region-card'><b>Region D (Soweto)</b><br>• Doornkop<br>• Dobsonville<br>• Protea Glen<br>• Diepkloof</div>", unsafe_allow_html=True)
-        st.markdown("<div class='region-card'><b>Region E (Sandton)</b><br>• Alexandra<br>• Sandton<br>• Wynberg</div>", unsafe_allow_html=True)
-
-    with r3:
-        st.markdown("<div class='region-card'><b>Region F (Inner City)</b><br>• CBD Health Hub<br>• Jeppe Clinic<br>• 80 Albert Street<br>• Joubert Park</div>", unsafe_allow_html=True)
-        st.markdown("<div class='region-card'><b>Region G (Deep South)</b><br>• Orange Farm<br>• Ennerdale<br>• Lenasia</div>", unsafe_allow_html=True)
-
-
-   
+    else:
+        # If they ARE subscribed OR they are the CEO/COO
+        st.success("✅ Subscription Active: Accessing Real-Time Regional Data")
+        
+        # The Graphs
+        cg1, cg2 = st.columns(2)
+        with cg1: st.bar_chart({"A": 5.9, "B": 4.9, "C": 7.1, "D": 5.8, "E": 5.2, "F": 7.8, "G": 6.2})
+        with cg2: st.area_chart({"A": 14069, "B": 7076, "C": 6913, "D": 30948, "E": 6819, "F": 23532, "G": 17919})
+        
+        st.divider()
+        st.subheader("📍 Regional Facility Directory")
+        
+        # (Insert your clean 3-column region cards here)
+        r1, r2, r3 = st.columns(3)
+        with r1:
+            st.markdown("<div class='region-card'><b>Region A (Midrand)</b><br>• Bophelong Clinic<br>• Diepsloot South</div>", unsafe_allow_html=True)
+        # ... and so on for r2 and r3
