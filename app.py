@@ -1,4 +1,24 @@
 import streamlit as st
+# --- SIMULATED BLOCKCHAIN ERROR FOR DEMONSTRATION ---
+st.divider()
+st.subheader("🛠️ Developer Debug Tools")
+st.write("Use this to test the system's response to a failed Blockchain transaction.")
+
+if st.button("🚨 Simulate Failed Contract Transaction"):
+    with st.spinner("Communicating with Ethereum Sepolia..."):
+        # We simulate a "Revert" which happens in Solidity when a 'require' statement fails
+        import time
+        time.sleep(2) # Makes it look like it's actually checking the network
+        
+        st.error("❌ **Web3 Error: Execution Reverted**")
+        st.markdown("""
+            **Error Details:**
+            * **Reason:** `UnauthorizedAccess()`
+            * **Contract:** `0x71C...a2b`
+            * **Status:** Transaction failed to mine.
+            
+            *The system blocked this action because the MetaMask signature does not match the Admin Registry.*
+        """)
 from web3 import Web3
 from streamlit_js_eval import streamlit_js_eval
 import config
