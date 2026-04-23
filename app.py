@@ -59,6 +59,7 @@ if user_type == "Internal Executive/Technical Team":
 else:
     current_role = "Public Stakeholder"
 
+# Navigation Logic
 if user_type == "Public Stakeholder" and not st.session_state.subscribed:
     nav_options = ["📊 Subscription Portal"]
 else:
@@ -66,9 +67,20 @@ else:
     
 page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 5. PAGE: DASHBOARD (UPDATED WITH REGIONAL HUBS) ---
+# --- 5. PAGE: DASHBOARD ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
+    
+    # Financial Overview Metrics
+    df_ledger = load_data(TRANSACTION_FILE, ledger_cols)
+    total_delivered = df_ledger["Credit_Value"].sum() if not df_ledger.empty else 0.0
+    pending_debt = df_ledger[df_ledger["Status"] == "Unpaid (Credit)"]["Credit_Value"].sum() if not df_ledger.empty else 0.0
+    
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Procurement Value", f"R {total_delivered:,.2f}")
+    m2.metric("Total Outstanding Credit", f"R {pending_debt:,.2f}", delta="- Settlement Pending", delta_color="inverse")
+    m3.metric("Verified Regions", "3 Hubs")
+
     st.markdown('<div class="about-box"><h3>Mission Overview</h3>Eco-Chain serves as a vital bridge between Gauteng healthcare institutions and pharmaceutical excellence through blockchain-verified procurement.</div>', unsafe_allow_html=True)
     
     st.subheader("📍 Gauteng Regional Hubs")
@@ -80,7 +92,7 @@ if page == "🏠 Dashboard":
     with c3:
         st.markdown("<div class='region-card'><h4>Region E, F & G</h4><p><b>Central Hub:</b> Rahima Moosa Mother & Child</p></div>", unsafe_allow_html=True)
 
-# --- 6. PAGE: CLINIC HEALTH INSIGHTS (WITH YOUR HIV STATS) ---
+# --- 6. PAGE: CLINIC HEALTH INSIGHTS ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights")
     st.write("Data source: DHIS 2020 Clinical Records")
@@ -92,8 +104,6 @@ elif page == "📈 Clinic Health Insights":
         "Positivity Rate %": ["5.9%", "4.9%", "7.1%", "5.8%"]
     })
     st.table(hiv_data)
-    
-    # Visual Insight
     st.info("💡 **Demand Insight:** Region C shows the highest positivity rate (7.1%), indicating a prioritized need for ARV stock replenishment in that hub.")
 
 # --- 7. PAGE: MEDICATION REGISTRY ---
@@ -157,9 +167,21 @@ elif page == "🧾 Invoice Generator":
         if st.button("Mark as PAID"):
             df.loc[(df["Hospital"] == target) & (df["Status"] == "Unpaid (Credit)"), "Status"] = "Settle (Paid)"
             save_data(df, TRANSACTION_FILE)
+            st.success("Payment verified and recorded.")
             st.rerun()
 
 # --- 10. PAGE: LEDGER ---
 elif page == "📜 Transaction Records":
     st.title("📜 Permanent Ledger")
     st.dataframe(load_data(TRANSACTION_FILE, ledger_cols))
+
+# --- 11. SUBSCRIPTION PORTAL ---
+elif page == "📊 Subscription Portal":
+    st.title("🛡️ Secure Data Access Portal")
+    if not st.session_state.subscribed:
+        st.warning("🚨 Access Restricted to Public Stakeholders.")
+        if st.button("🦊 Pay 0.05 ETH for Access"):
+            st.session_state.subscribed = True
+            st.rerun()
+    else:
+        st.success("✅ Subscription Active.")
