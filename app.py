@@ -1,95 +1,94 @@
 import streamlit as st
-import pandas as pd
-import os
-from datetime import datetime
+from web3 import Web3
+from streamlit_js_eval import streamlit_js_eval
+import config
 
-# --- 1. THEME & STYLING ---
-st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
+# --- 1. BLOCKCHAIN CONNECTION ---
+w3 = Web3(Web3.HTTPProvider(config.RPC_URL))
+contract = w3.eth.contract(address=config.CONTRACT_ADDRESS, abi=config.CONTRACT_ABI)
 
-st.markdown("""
-    <style>
-    .main { background-color: #F8FAFC; }
-    .about-box {
-        background-color: #F1F5F9; padding: 25px; border-radius: 10px;
-        border-left: 6px solid #0D9488; margin-bottom: 25px;
-    }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; }
-    .invoice-box {
-        background-color: white; padding: 30px; border: 1px solid #E2E8F0;
-        border-radius: 10px; font-family: 'Courier New', Courier, monospace;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+st.set_page_config(page_title=config.APP_NAME, layout="wide")
 
-# --- 2. DATA PERSISTENCE HELPERS ---
-def save_data(df, filename):
-    df.to_csv(filename, index=False)
+# --- 2. SESSION STATE (The Memory) ---
+# This keeps the wallet connected even when you click buttons
+if 'user_address' not in st.session_state:
+    st.session_state['user_address'] = None
 
-def load_data(filename, columns):
-    if os.path.exists(filename):
-        return pd.read_csv(filename)
-    return pd.DataFrame(columns=columns)
+# --- 3. METAMASK LOGIC ---
+def get_wallet():
+    # Grab address from browser
+    found_wallet = streamlit_js_eval(js_expressions="window.ethereum ? window.ethereum.selectedAddress : null", key="wallet_check")
+    if found_wallet:
+        st.session_state['user_address'] = found_wallet
+    return st.session_state['user_address']
 
-# File paths
-TRANSACTION_FILE = "permanent_ledger.csv"
-INVENTORY_FILE = "medicine_inventory.csv"
+def request_conn():
+    streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' })", key="conn_btn")
 
-ledger_cols = ["Timestamp", "Role", "Hospital", "Type", "Name", "Qty", "Credit_Value", "Status"]
-inventory_cols = ["Medication Name", "Category", "Current Stock", "Unit Price (ZAR)"]
+# --- 4. INTERFACE ---
+st.title(config.APP_NAME)
+st.caption(config.TAGLINE)
 
-# --- 3. SESSION STATE & AUTH ---
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "subscribed" not in st.session_state:
-    st.session_state.subscribed = False
-
-# Sidebar Role Logic
-user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
-
-if user_type == "Internal Executive/Technical Team":
-    current_role = st.sidebar.selectbox("Access Level:", ["CEO", "Finance Director", "COO", "Developer"])
-    if not st.session_state.authenticated:
-        if st.sidebar.button("Sign In"): st.session_state.authenticated = True; st.rerun()
-    else:
-        st.sidebar.success(f"Verified: {current_role}")
+# Sidebar Logic
+user_addr = get_wallet()
+if not user_addr:
+    st.sidebar.warning("MetaMask Not Connected")
+    if st.sidebar.button("Connect MetaMask"):
+        request_conn()
 else:
-    current_role = "Public Stakeholder"
+    st.sidebar.success(f"Connected: {user_addr[:6]}...{user_addr[-4:]}")
 
-# --- 4. NAVIGATION ---
-if user_type == "Public Stakeholder" and not st.session_state.subscribed:
-    nav_options = ["📊 Subscription Portal"]
-else:
-    nav_options = ["🏠 Dashboard", "📦 Medicine Inventory", "💊 Medication Registry", "🧾 Invoice Generator", "📜 Transaction Records"]
-    
-page = st.sidebar.radio("Navigation", nav_options)
+menu = ["📊 Dashboard", "📦 Inventory", "💸 Finance", "🛡️ Admin"]
+choice = st.sidebar.radio("Navigate", menu)
 
-# --- 5. PAGE: MEDICINE INVENTORY (NEW) ---
-if page == "📦 Medicine Inventory":
-    st.title("📦 Master Medicine Inventory")
-    st.info("Central database of all medications stored within the Eco-Chain network.")
-    
-    inv_df = load_data(INVENTORY_FILE, inventory_cols)
-    
-    if not inv_df.empty:
-        st.dataframe(inv_df, use_container_width=True)
+# --- 5. PAGES ---
+
+if choice == "📊 Dashboard":
+    st.subheader("Global Overview")
+    try:
+        bal = contract.functions.getContractBalance().call()
+        st.metric("Contract Escrow Balance", f"{w3.from_wei(bal, 'ether')} ETH")
+    except:
+        st.error("Could not fetch balance. Check contract address.")
+
+elif choice == "📦 Inventory":
+    st.subheader("Inventory Management")
+    med_name = st.text_input("Medication Name")
+    if st.button("Issue 1 Unit"):
+        if not user_addr:
+            st.error("Connect MetaMask first!")
+        else:
+            data = contract.functions.issueMedication(med_name)._encode_transaction_data()
+            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{{ from: '{user_addr}', to: '{config.CONTRACT_ADDRESS}', data: '{data}' }}] }})")
+
+elif choice == "💸 Finance":
+    st.subheader("Order Payments")
+    o_id = st.number_input("Order ID", min_value=1, step=1)
+    if st.button("Pay to Escrow"):
+        if not user_addr:
+            st.error("Connect MetaMask!")
+        else:
+            try:
+                order = contract.functions.orders(int(o_id)).call()
+                val_hex = hex(order[3]) # totalCost
+                data = contract.functions.depositEscrow(int(o_id))._encode_transaction_data()
+                streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{{ from: '{user_addr}', to: '{config.CONTRACT_ADDRESS}', data: '{data}', value: '{val_hex}' }}] }})")
+            except:
+                st.error("Order not found.")
+
+elif choice == "🛡️ Admin":
+    st.subheader("System Setup")
+    with st.expander("Register New Medication"):
+        n = st.text_input("Name")
+        s = st.number_input("Initial Stock", 0)
+        t = st.number_input("Threshold", 1)
+        q = st.number_input("Reorder Qty", 1)
+        p = st.number_input("Price (Wei)", 0)
+        sup = st.text_input("Supplier Address")
         
-        # Simple Stock Update Feature
-        with st.expander("Update Stock Levels"):
-            selected_med = st.selectbox("Select Medication", inv_df["Medication Name"].tolist())
-            new_stock = st.number_input("Add to Stock", min_value=0)
-            if st.button("Update Inventory"):
-                inv_df.loc[inv_df["Medication Name"] == selected_med, "Current Stock"] += new_stock
-                save_data(inv_df, INVENTORY_FILE)
-                st.success(f"Updated {selected_med} stock.")
-                st.rerun()
-    else:
-        st.warning("Inventory is currently empty. Add medication via the Registry.")
-
-# --- 6. PAGE: MEDICATION REGISTRY (UPDATED) ---
-elif page == "💊 Medication Registry":
-    st.title("💊 Medication Credit Registry")
-    
-    with st.form("mint_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            med_type = st
+        if st.button("Add Medication"):
+            if not user_addr or not sup:
+                st.error("Missing wallet connection or supplier address.")
+            else:
+                data = contract.functions.addMedication(n, int(s), int(t), int(q), int(p), w3.to_checksum_address(sup))._encode_transaction_data()
+                streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{{ from: '{user_addr}', to: '{config.CONTRACT_ADDRESS}', data: '{data}' }}] }})")
