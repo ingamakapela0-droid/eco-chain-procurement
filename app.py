@@ -7,188 +7,150 @@ from datetime import datetime
 st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
 
 st.markdown("""
-    <style>
-    .main { background-color: #F8FAFC; }
-    .about-box {
-        background-color: #F1F5F9; padding: 25px; border-radius: 10px;
-        border-left: 6px solid #0D9488; margin-bottom: 25px;
-    }
-    .insight-box {
-        background-color: #FFFFFF; padding: 25px; border-radius: 10px;
-        border: 1px solid #E2E8F0; margin-bottom: 25px; text-align: justify;
-        line-height: 1.6; color: #1E293B;
-    }
-    .region-card {
-        background-color: #FFFFFF; padding: 20px; border-radius: 12px;
-        border: 1px solid #E2E8F0; margin-bottom: 20px; min-height: 250px;
-    }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; }
-    </style>
-    """, unsafe_allow_html=True)
+    <style>
+    .main { background-color: #F8FAFC; }
+    .about-box {
+        background-color: #F1F5F9; padding: 25px; border-radius: 10px;
+        border-left: 6px solid #0D9488; margin-bottom: 25px;
+    }
+    .invoice-card {
+        background-color: #FFFFFF; padding: 30px; border-radius: 15px;
+        border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; }
+    </style>
+    """, unsafe_allow_html=True)
 
 # --- 2. DATA PERSISTENCE HELPERS ---
-# This ensures transactions stay permanent even if the server restarts
 def save_data(df, filename):
-    df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False)
 
 def load_data(filename, columns):
-    if os.path.exists(filename):
-        return pd.read_csv(filename)
-    return pd.DataFrame(columns=columns)
+    if os.path.exists(filename):
+        return pd.read_csv(filename)
+    return pd.DataFrame(columns=columns)
 
 # File paths
 TRANSACTION_FILE = "permanent_ledger.csv"
-ledger_cols = ["Timestamp", "Role", "Type", "Name", "Qty", "Credit_Value", "Status"]
+INVENTORY_FILE = "medication_inventory.csv"
+
+ledger_cols = ["Timestamp", "Role", "Hospital", "Type", "Name", "Qty", "Credit_Value", "Status"]
+inventory_cols = ["Name", "Category", "Last_Unit_Price", "Total_Units_Procured"]
 
 # --- 3. SESSION STATE ---
-USER_WALLET = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
-
 if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
+    st.session_state.authenticated = False
 if "subscribed" not in st.session_state:
-    st.session_state.subscribed = False
+    st.session_state.subscribed = False
 
-# --- 4. SIDEBAR: AUTHENTICATION ---
-if os.path.exists("logo.png"):
-    st.sidebar.image("logo.png", width=150)
-else:
-    st.sidebar.title("🌿 Eco-Chain")
-
+# --- 4. SIDEBAR ---
+st.sidebar.title("🌿 Eco-Chain")
 user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
 if user_type == "Internal Executive/Technical Team":
-    st.sidebar.markdown("### 🔐 Executive Login")
-    current_role = st.sidebar.selectbox("Access Level:", [
-        "CEO (Chief Executive Officer)", "COO (Chief Operations Officer)",
-        "Finance Director", "System Developer", "Marketing Director"
-    ])
-    if not st.session_state.authenticated:
-        if st.sidebar.button("Sign In with MetaMask"):
-            st.session_state.authenticated = True
-            st.rerun()
-    else:
-        st.sidebar.success(f"Verified: {current_role}")
-        if st.sidebar.button("Sign Out"):
-            st.session_state.authenticated = False
-            st.rerun()
+    current_role = st.sidebar.selectbox("Access Level:", ["CEO", "Finance Director", "COO", "Developer"])
+    if st.sidebar.button("Sign In with MetaMask"):
+        st.session_state.authenticated = True
 else:
-    current_role = "Public Stakeholder"
+    current_role = "Public Stakeholder"
 
-# --- 5. ACCESS CONTROL GATE ---
+# Navigation Logic
 if user_type == "Public Stakeholder" and not st.session_state.subscribed:
-    nav_options = ["📊 Subscription Portal"]
-    page = "📊 Subscription Portal"
+    nav_options = ["📊 Subscription Portal"]
 else:
-    nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📍 Regional Network", "📈 Clinic Health Insights"]
-    
-    if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
-        nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
-    
-    page = st.sidebar.radio("Navigation", nav_options)
+    nav_options = ["🏠 Dashboard", "📦 Medication Inventory", "💊 Medication Registry", "🧾 Invoice Generator", "📜 Transaction Records"]
+    
+page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 6. PAGE: SUBSCRIPTION PORTAL ---
-if page == "📊 Subscription Portal":
-    st.title("🛡️ Secure Data Access Portal")
-    if not st.session_state.subscribed and user_type == "Public Stakeholder":
-        st.warning("🚨 Access Restricted: This system contains sensitive clinical and procurement data.")
-        st.info("Public stakeholders are required to process a blockchain transaction to unlock access.")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("""
-            ### Unlocking Benefits:
-            * **Real-time Regional Network Access**
-            * **Medication Demand Forecasting**
-            * **HIV & TB Clinical Tables**
-            """)
-        with c2:
-            st.markdown("### 🦊 MetaMask Transaction")
-            st.write(f"Amount: **0.05 ETH**")
-            if st.button("🦊 Pay & Secure Access"):
-                st.session_state.subscribed = True
-                st.success("Transaction Verified!")
-                st.rerun()
-    else:
-        st.success("✅ Subscription Verified on Blockchain.")
+# --- 5. PAGE: MEDICATION INVENTORY (NEW) ---
+if page == "📦 Medication Inventory":
+    st.title("📦 Master Medication Inventory")
+    st.info("Permanent record of all unique medications processed through the Eco-Chain system.")
+    
+    inv_df = load_data(INVENTORY_FILE, inventory_cols)
+    if not inv_df.empty:
+        st.dataframe(inv_df, use_container_width=True)
+        st.metric("Unique Lines in Inventory", len(inv_df))
+    else:
+        st.info("Inventory is currently empty. Data is added automatically during registration.")
 
-# --- 7. PAGE: DASHBOARD ---
-elif page == "🏠 Dashboard":
-    st.title("🏥 Eco-Chain | Regional Procurement")
-    st.markdown('<div class="about-box"><h3>Mission Overview</h3>Your solution positions Eco-Chain as a vital bridge between healthcare institutions and pharmaceutical companies...</div>', unsafe_allow_html=True)
-
-# --- 8. PAGE: REGIONAL NETWORK ---
-elif page == "📍 Regional Network":
-    st.title("📍 Gauteng Regional Health Network")
-    col1, col2, col3 = st.columns(3)
-    with col1: st.markdown("<div class='region-card'><h3>Region A & B</h3><b>Hub:</b> Helen Joseph</div>", unsafe_allow_html=True)
-    with col2: st.markdown("<div class='region-card'><h3>Region C & D</h3><b>Hub:</b> Chris Hani Baragwanath</div>", unsafe_allow_html=True)
-    with col3: st.markdown("<div class='region-card'><h3>Region E, F & G</h3><b>Hub:</b> Rahima Moosa</div>", unsafe_allow_html=True)
-
-# --- 9. PAGE: CLINIC HEALTH INSIGHTS ---
-elif page == "📈 Clinic Health Insights":
-    st.title("📈 Regional Health Insights")
-    st.subheader("📊 Table 6: HIV Positivity (DHIS 2020)")
-    st.table(pd.DataFrame({
-        "Region": ["A", "B", "C", "D"],
-        "Tests Done": [317521, 109163, 197739, 467579],
-        "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%"]
-    }))
-
-# --- 10. INTERNAL: REGISTRY (UPDATED WITH CREDIT FEATURE) ---
+# --- 6. PAGE: MEDICATION REGISTRY (UPDATED) ---
 elif page == "💊 Medication Registry":
-    st.title("💊 Medication Credit Registry")
-    st.info("Record medication purchased on credit. The hospital will be billed based on these entries.")
-    
-    with st.form("mint_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            med_type = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)", "General Antibiotics", "Emergency Supply"])
-            med_name = st.text_input("Medication Name")
-        with col2:
-            quantity = st.number_input("Quantity (Units)", min_value=1)
-            unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
-        
-        hospital_name = st.selectbox("Assign to Hospital", ["Helen Joseph", "Chris Hani Baragwanath", "Rahima Moosa"])
-        
-        if st.form_submit_button("Confirm Credit Transaction"):
-            total_credit = quantity * unit_price
-            new_record = pd.DataFrame([{
-                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "Role": current_role,
-                "Hospital": hospital_name,
-                "Type": med_type,
-                "Name": med_name,
-                "Qty": quantity,
-                "Credit_Value": total_credit,
-                "Status": "Unpaid (Credit)"
-            }])
-            
-            # Load existing, append, and save permanently
-            existing_df = load_data(TRANSACTION_FILE, ledger_cols + ["Hospital"])
-            updated_df = pd.concat([existing_df, new_record], ignore_index=True)
-            save_data(updated_df, TRANSACTION_FILE)
-            
-            st.success(f"Successfully recorded R{total_credit:.2f} in credit for {hospital_name}.")
+    st.title("💊 Medication Credit Registry")
+    
+    with st.form("mint_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            med_type = st.selectbox("Category", ["HIV (ARVs)", "TB (Antibiotics)", "Emergency Supply", "General"])
+            med_name = st.text_input("Medication Name")
+        with col2:
+            quantity = st.number_input("Quantity", min_value=1)
+            unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0)
+        
+        hosp = st.selectbox("Assign to Hospital", ["Helen Joseph", "Chris Hani Baragwanath", "Rahima Moosa"])
+        
+        if st.form_submit_button("Confirm Credit Transaction"):
+            # 1. Update Ledger
+            new_record = pd.DataFrame([{
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "Role": current_role, "Hospital": hosp, "Type": med_type,
+                "Name": med_name, "Qty": quantity, "Credit_Value": quantity * unit_price, "Status": "Unpaid (Credit)"
+            }])
+            ledger_df = load_data(TRANSACTION_FILE, ledger_cols)
+            save_data(pd.concat([ledger_df, new_record]), TRANSACTION_FILE)
+            
+            # 2. Update Inventory (Add or Update)
+            inv_df = load_data(INVENTORY_FILE, inventory_cols)
+            if med_name in inv_df['Name'].values:
+                inv_df.loc[inv_df['Name'] == med_name, 'Total_Units_Procured'] += quantity
+                inv_df.loc[inv_df['Name'] == med_name, 'Last_Unit_Price'] = unit_price
+            else:
+                new_item = pd.DataFrame([{"Name": med_name, "Category": med_type, "Last_Unit_Price": unit_price, "Total_Units_Procured": quantity}])
+                inv_df = pd.concat([inv_df, new_item])
+            save_data(inv_df, INVENTORY_FILE)
+            
+            st.success(f"Record stored! Inventory updated for {med_name}.")
 
-# --- 11. INTERNAL: LEDGER (UPDATED WITH PERMANENT DATA) ---
+# --- 7. PAGE: INVOICE GENERATOR (NEW) ---
+elif page == "🧾 Invoice Generator":
+    st.title("🧾 Hospital Invoice Generator")
+    
+    df = load_data(TRANSACTION_FILE, ledger_cols)
+    unpaid_hospitals = df[df["Status"] == "Unpaid (Credit)"]["Hospital"].unique()
+    
+    if len(unpaid_hospitals) == 0:
+        st.success("🎉 All hospital accounts are currently settled!")
+    else:
+        target_hosp = st.selectbox("Select Hospital to Invoice", unpaid_hospitals)
+        hosp_data = df[(df["Hospital"] == target_hosp) & (df["Status"] == "Unpaid (Credit)")]
+        
+        total_debt = hosp_data["Credit_Value"].sum()
+        
+        st.markdown(f"""
+        <div class="invoice-card">
+            <h3>OFFICIAL INVOICE: {target_hosp}</h3>
+            <hr>
+            <p><b>Date:</b> {datetime.now().strftime("%Y-%m-%d")}</p>
+            <p><b>Issuer:</b> Eco-Chain Finance Office</p>
+            <br>
+            <h4>Outstanding Items:</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        st.table(hosp_data[["Name", "Qty", "Credit_Value"]])
+        
+        st.subheader(f"Grand Total: R {total_debt:,.2f}")
+        
+        if st.button(f"Mark Invoice for {target_hosp} as PAID"):
+            df.loc[(df["Hospital"] == target_hosp) & (df["Status"] == "Unpaid (Credit)"), "Status"] = "Settle (Paid)"
+            save_data(df, TRANSACTION_FILE)
+            st.success(f"Ledger updated! {target_hosp} balance is now zero.")
+            st.rerun()
+
+# --- RE-ADDING OTHER PAGES ---
+elif page == "🏠 Dashboard":
+    st.title("🏥 Eco-Chain Dashboard")
+    st.write("Welcome to the regional health procurement system.")
+
 elif page == "📜 Transaction Records":
-    st.title("📜 Permanent Credit Ledger")
-    
-    df = load_data(TRANSACTION_FILE, ledger_cols + ["Hospital"])
-    
-    if not df.empty:
-        # High-level metrics
-        unpaid_total = df[df["Status"] == "Unpaid (Credit)"]["Credit_Value"].sum()
-        st.metric("Total Outstanding Hospital Debt", f"R {unpaid_total:,.2f}")
-        
-        st.write("### Full Transaction History")
-        st.dataframe(df, use_container_width=True)
-        
-        # Download button for records
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Export Ledger to CSV", csv, "eco_chain_ledger.csv", "text/csv")
-    else:
-        st.info("No permanent records found.")
-
-st.sidebar.markdown("---")
-st.sidebar.caption(f"Eco-Chain v8.0 | Permanent Storage Active")   add data stored of med
-0ication,add invoice tab 
+    st.title("📜 Permanent Ledger")
+    st.dataframe(load_data(TRANSACTION_FILE, ledger_cols))
