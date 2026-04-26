@@ -1,168 +1,193 @@
 import streamlit as st
 import pandas as pd
 import os
-from streamlit_js_eval import streamlit_js_eval
+from datetime import datetime
 
-# --- 1. SETTINGS & STYLING ---
-st.set_page_config(page_title="Eco-Chain | Gauteng Health", layout="wide")
+# --- 1. THEME & STYLING ---
+st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
 
 st.markdown("""
     <style>
     .main { background-color: #F8FAFC; }
-    .about-box { background-color: #F1F5F9; padding: 25px; border-radius: 10px; border-left: 6px solid #0D9488; margin-bottom: 25px; }
-    .insight-box { background-color: #FFFFFF; padding: 25px; border-radius: 10px; border: 1px solid #E2E8F0; margin-bottom: 25px; text-align: justify; line-height: 1.6; color: #1E293B; }
-    .region-card { background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 20px; min-height: 280px; }
+    .about-box {
+        background-color: #F1F5F9; padding: 25px; border-radius: 10px;
+        border-left: 6px solid #0D9488; margin-bottom: 25px;
+    }
+    .insight-box {
+        background-color: #FFFFFF; padding: 25px; border-radius: 10px;
+        border: 1px solid #E2E8F0; margin-bottom: 25px; text-align: justify;
+        line-height: 1.6; color: #1E293B;
+    }
+    .region-card {
+        background-color: #FFFFFF; padding: 20px; border-radius: 12px;
+        border: 1px solid #E2E8F0; margin-bottom: 20px; min-height: 250px;
+    }
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. THE MASTER ID REGISTRY (Internal Team) ---
-AUTHORIZED_WALLETS = {
-    "0xe367800e0ceccc2a7d5acedd42d80b194a9381ed": "CEO",
-    "0xabc1234567890abcdef1234567890abcdef1234": "COO",
-    "0x1111111111111111111111111111111111111111": "CFO",
-    "0x2222222222222222222222222222222222222222": "Marketing Director",
-    "0x71c7656ec7ab88b098defb751b7401b5f6d8976f": "Systems Developer",
-    "0x3333333333333333333333333333333333333333": "Purchasing Manager"
-}
+# --- 2. DATA PERSISTENCE HELPERS ---
+# This ensures transactions stay permanent even if the server restarts
+def save_data(df, filename):
+    df.to_csv(filename, index=False)
+
+def load_data(filename, columns):
+    if os.path.exists(filename):
+        return pd.read_csv(filename)
+    return pd.DataFrame(columns=columns)
+
+# File paths
+TRANSACTION_FILE = "permanent_ledger.csv"
+ledger_cols = ["Timestamp", "Role", "Type", "Name", "Qty", "Credit_Value", "Status"]
 
 # --- 3. SESSION STATE ---
-if "user_wallet" not in st.session_state: st.session_state.user_wallet = None
-if "user_role" not in st.session_state: st.session_state.user_role = "Guest"
-if "subscribed" not in st.session_state: st.session_state.subscribed = False
-if "inventory" not in st.session_state: st.session_state.inventory = []
+USER_WALLET = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
 
-# --- 4. SIDEBAR: IDENTITY & LOGO ---
-with st.sidebar:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=200)
-    else:
-        st.markdown("<div style='background-color:#0D9488; padding:10px; border-radius:10px; text-align:center;'><h2 style='color:white; margin:0;'>🌿 ECO-CHAIN</h2></div><br>", unsafe_allow_html=True)
-    
-    # MetaMask Real Connection
-    wallet_id = streamlit_js_eval(
-        js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' }).then(accounts => accounts[0])", 
-        key="metamask_connection"
-    )
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "subscribed" not in st.session_state:
+    st.session_state.subscribed = False
 
-    if wallet_id:
-        st.session_state.user_wallet = wallet_id.lower()
-        st.session_state.user_role = AUTHORIZED_WALLETS.get(st.session_state.user_wallet, "Public Stakeholder")
-        st.success(f"Verified: {st.session_state.user_role}")
-    else:
-        st.warning("Awaiting MetaMask connection...")
-        # Emergency Override for Demo
-        st.caption("Demo Switch:")
-        demo_mode = st.selectbox("View as:", ["Select...", "CEO", "Purchasing Manager", "Public Stakeholder"])
-        if demo_mode != "Select...":
-            st.session_state.user_role = demo_mode
+# --- 4. SIDEBAR: AUTHENTICATION ---
+if os.path.exists("logo.png"):
+    st.sidebar.image("logo.png", width=150)
+else:
+    st.sidebar.title("🌿 Eco-Chain")
 
-# --- 5. NAVIGATION LOGIC ---
-internal_team = list(AUTHORIZED_WALLETS.values())
-nav_options = ["🏠 Dashboard", "📊 Subscription Portal"]
+user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
-if st.session_state.subscribed or st.session_state.user_role in internal_team:
-    nav_options += ["📍 Regional Network", "📈 Clinic Health Insights"]
-if st.session_state.user_role in internal_team:
-    nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
-
-page = st.sidebar.radio("Navigation", nav_options)
-
-# --- 6. PAGE: DASHBOARD ---
-if page == "🏠 Dashboard":
-    st.title("🏥 Eco-Chain | Gauteng Node")
-    st.markdown("""
-        <div class="about-box">
-            <h3>Mission Overview</h3>
-            Eco-Chain acts as a vital bridge between healthcare institutions and pharmaceutical companies, 
-            ensuring a more efficient, transparent, and responsive supply chain. By automating inventory, 
-            we reduce human error and ensure patient care is never disrupted.
-        </div>
-    """, unsafe_allow_html=True)
-
-    if st.session_state.user_role in internal_team:
-        st.subheader(f"🔐 Executive Command Center: {st.session_state.user_role}")
-        c1, c2, c3 = st.columns(3)
-        if st.session_state.user_role == "CEO":
-            c1.metric("Lives on ART", "409,240")
-            c2.metric("Network Coverage", "100%")
-            c3.metric("System Security", "Blockchain")
-        elif st.session_state.user_role == "Purchasing Manager":
-            c1.metric("Stock Value", "R 4.8M")
-            c2.metric("Reorders", "8 Batches")
-            c3.metric("Lead Time", "4.2 Days")
-
-# --- 7. PAGE: SUBSCRIPTION PORTAL ---
-elif page == "📊 Subscription Portal":
-    st.title("🛡️ Secure Access Portal")
-    if st.session_state.user_role == "Public Stakeholder" and not st.session_state.subscribed:
-        st.warning("Public stakeholders must pay 0.05 ETH to unlock Regional Insights.")
-        if st.button("🦊 Pay 0.05 ETH via MetaMask"):
-            with st.spinner("Processing on Ethereum L2..."):
-                import time; time.sleep(2)
-            st.session_state.subscribed = True
-            st.success("Transaction Confirmed!")
+if user_type == "Internal Executive/Technical Team":
+    st.sidebar.markdown("### 🔐 Executive Login")
+    current_role = st.sidebar.selectbox("Access Level:", [
+        "CEO (Chief Executive Officer)", "COO (Chief Operations Officer)",
+        "Finance Director", "System Developer", "Marketing Director"
+    ])
+    if not st.session_state.authenticated:
+        if st.sidebar.button("Sign In with MetaMask"):
+            st.session_state.authenticated = True
             st.rerun()
     else:
-        st.success(f"Access Level: Full ({st.session_state.user_role})")
+        st.sidebar.success(f"Verified: {current_role}")
+        if st.sidebar.button("Sign Out"):
+            st.session_state.authenticated = False
+            st.rerun()
+else:
+    current_role = "Public Stakeholder"
 
-# --- 8. PAGE: REGIONAL NETWORK (From Figure 3 Map) ---
-elif page == "📍 Regional Network":
-    st.title("📍 City of Johannesburg Regional Map")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("<div class='region-card'><b>Region A</b><hr>Diepsloot, Midrand<br><i>Hub: Helen Joseph</i></div>", unsafe_allow_html=True)
-        st.markdown("<div class='region-card'><b>Region D</b><hr>Soweto, Doornkop<br><i>Hub: Chris Hani Bara</i></div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown("<div class='region-card'><b>Region B</b><hr>Randburg, Rosebank<br><i>Hub: Rahima Moosa</i></div>", unsafe_allow_html=True)
-        st.markdown("<div class='region-card'><b>Region E</b><hr>Sandton, Alexandra</div>", unsafe_allow_html=True)
-    with col3:
-        st.markdown("<div class='region-card'><b>Region C</b><hr>Roodepoort, Florida</div>", unsafe_allow_html=True)
-        st.markdown("<div class='region-card'><b>Region G</b><hr>Orange Farm, Ennerdale</div>", unsafe_allow_html=True)
-
-# --- 9. PAGE: CLINIC HEALTH INSIGHTS (From DHIS Images) ---
-elif page == "📈 Clinic Health Insights":
-    st.title("📈 Regional Health Insights (DHIS 2020)")
+# --- 5. ACCESS CONTROL GATE ---
+if user_type == "Public Stakeholder" and not st.session_state.subscribed:
+    nav_options = ["📊 Subscription Portal"]
+    page = "📊 Subscription Portal"
+else:
+    nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📍 Regional Network", "📈 Clinic Health Insights"]
     
-    st.subheader("📊 Table 6: HIV Positivity Trends")
-    st.table(pd.DataFrame({
-        "Region": ["A", "B", "C", "D", "E", "F", "G"],
-        "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
-        "Positive": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
-        "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
-    }))
+    if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
+        nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
+    
+    page = st.sidebar.radio("Navigation", nav_options)
 
-    st.subheader("💊 Table 7: ART Adherence (Gauteng)")
-    st.table(pd.DataFrame({
-        "Region": ["A", "B", "C", "D", "E", "F", "G"],
-        "Target": [72898, 29347, 41906, 146046, 44658, 107182, 74479],
-        "Actual": [58829, 22271, 34993, 115098, 37839, 83650, 56560],
-        "Progress %": ["80.7%", "75.9%", "83.5%", "78.8%", "84.7%", "78%", "75.9%"]
-    }))
-
-    st.subheader("🫁 Table 4: TB Outcomes (Drug Sensitive)")
-    st.table(pd.DataFrame({
-        "Region": ["A", "B", "C", "D", "E", "F", "G"],
-        "Success %": ["89.4", "90.3", "87.5", "80.5", "87.0", "80.7", "81.5"],
-        "Death %": ["5.3", "3.7", "4.3", "7.8", "5.8", "4.0", "7.1"],
-        "Lost %": ["4.8", "5.5", "8.2", "10.9", "6.7", "9.6", "11.0"]
-    }))
-
-# --- 10. PAGE: MEDICATION REGISTRY (Admin Only) ---
-elif page == "💊 Medication Registry":
-    st.title("💊 Medication Registry (Purchasing/Developer)")
-    with st.form("mint_form"):
-        med = st.text_input("Medication Name")
-        qty = st.number_input("Quantity", min_value=100)
-        reg = st.selectbox("Region", ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"])
-        if st.form_submit_button("Mint to Blockchain"):
-            st.session_state.inventory.append({"Date": "2026-04", "User": st.session_state.user_role, "Med": med, "Qty": qty, "Region": reg})
-            st.success("Batch successfully recorded on-chain.")
-
-# --- 11. PAGE: TRANSACTION RECORDS ---
-elif page == "📜 Transaction Records":
-    st.title("📜 On-Chain Ledger")
-    if st.session_state.inventory:
-        st.table(pd.DataFrame(st.session_state.inventory))
+# --- 6. PAGE: SUBSCRIPTION PORTAL ---
+if page == "📊 Subscription Portal":
+    st.title("🛡️ Secure Data Access Portal")
+    if not st.session_state.subscribed and user_type == "Public Stakeholder":
+        st.warning("🚨 Access Restricted: This system contains sensitive clinical and procurement data.")
+        st.info("Public stakeholders are required to process a blockchain transaction to unlock access.")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("""
+            ### Unlocking Benefits:
+            * **Real-time Regional Network Access**
+            * **Medication Demand Forecasting**
+            * **HIV & TB Clinical Tables**
+            """)
+        with c2:
+            st.markdown("### 🦊 MetaMask Transaction")
+            st.write(f"Amount: **0.05 ETH**")
+            if st.button("🦊 Pay & Secure Access"):
+                st.session_state.subscribed = True
+                st.success("Transaction Verified!")
+                st.rerun()
     else:
-        st.info("No recorded transactions.")
+        st.success("✅ Subscription Verified on Blockchain.")
+
+# --- 7. PAGE: DASHBOARD ---
+elif page == "🏠 Dashboard":
+    st.title("🏥 Eco-Chain | Regional Procurement")
+    st.markdown('<div class="about-box"><h3>Mission Overview</h3>Your solution positions Eco-Chain as a vital bridge between healthcare institutions and pharmaceutical companies...</div>', unsafe_allow_html=True)
+
+# --- 8. PAGE: REGIONAL NETWORK ---
+elif page == "📍 Regional Network":
+    st.title("📍 Gauteng Regional Health Network")
+    col1, col2, col3 = st.columns(3)
+    with col1: st.markdown("<div class='region-card'><h3>Region A & B</h3><b>Hub:</b> Helen Joseph</div>", unsafe_allow_html=True)
+    with col2: st.markdown("<div class='region-card'><h3>Region C & D</h3><b>Hub:</b> Chris Hani Baragwanath</div>", unsafe_allow_html=True)
+    with col3: st.markdown("<div class='region-card'><h3>Region E, F & G</h3><b>Hub:</b> Rahima Moosa</div>", unsafe_allow_html=True)
+
+# --- 9. PAGE: CLINIC HEALTH INSIGHTS ---
+elif page == "📈 Clinic Health Insights":
+    st.title("📈 Regional Health Insights")
+    st.subheader("📊 Table 6: HIV Positivity (DHIS 2020)")
+    st.table(pd.DataFrame({
+        "Region": ["A", "B", "C", "D"],
+        "Tests Done": [317521, 109163, 197739, 467579],
+        "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%"]
+    }))
+
+# --- 10. INTERNAL: REGISTRY (UPDATED WITH CREDIT FEATURE) ---
+elif page == "💊 Medication Registry":
+    st.title("💊 Medication Credit Registry")
+    st.info("Record medication purchased on credit. The hospital will be billed based on these entries.")
+    
+    with st.form("mint_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            med_type = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)", "General Antibiotics", "Emergency Supply"])
+            med_name = st.text_input("Medication Name")
+        with col2:
+            quantity = st.number_input("Quantity (Units)", min_value=1)
+            unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
+        
+        hospital_name = st.selectbox("Assign to Hospital", ["Helen Joseph", "Chris Hani Baragwanath", "Rahima Moosa"])
+        
+        if st.form_submit_button("Confirm Credit Transaction"):
+            total_credit = quantity * unit_price
+            new_record = pd.DataFrame([{
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "Role": current_role,
+                "Hospital": hospital_name,
+                "Type": med_type,
+                "Name": med_name,
+                "Qty": quantity,
+                "Credit_Value": total_credit,
+                "Status": "Unpaid (Credit)"
+            }])
+            
+            # Load existing, append, and save permanently
+            existing_df = load_data(TRANSACTION_FILE, ledger_cols + ["Hospital"])
+            updated_df = pd.concat([existing_df, new_record], ignore_index=True)
+            save_data(updated_df, TRANSACTION_FILE)
+            
+            st.success(f"Successfully recorded R{total_credit:.2f} in credit for {hospital_name}.")
+
+# --- 11. INTERNAL: LEDGER (UPDATED WITH PERMANENT DATA) ---
+elif page == "📜 Transaction Records":
+    st.title("📜 Permanent Credit Ledger")
+    
+    df = load_data(TRANSACTION_FILE, ledger_cols + ["Hospital"])
+    
+    if not df.empty:
+        # High-level metrics
+        unpaid_total = df[df["Status"] == "Unpaid (Credit)"]["Credit_Value"].sum()
+        st.metric("Total Outstanding Hospital Debt", f"R {unpaid_total:,.2f}")
+        
+        st.write("### Full Transaction History")
+        st.dataframe(df, use_container_width=True)
+        
+        # Download button for records
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Export Ledger to CSV", csv, "eco_chain_ledger.csv", "text/csv")
+    else:
+        st.info("No permanent records found.")
+
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Eco-Chain v8.0 | Permanent Storage Active")
