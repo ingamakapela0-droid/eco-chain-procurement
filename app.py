@@ -92,35 +92,36 @@ if page == "📊 Subscription Portal":
 elif page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     
-    # Restored Logo Logic for Dashboard Header
+    # Restored Logo Logic
     if os.path.exists("logo.png"):
         st.image("logo.png", width=200)
     
-    st.markdown(f"""
-        <div class="about-box">
-            <h3>Company Overview & Mission</h3>
-            <p><b>Eco-Chain Procurement Solutions</b> aims to provide a solution to the abrupt shortage 
-            of medication at local clinics and rural hospitals. We act as the <b>bridge</b> between 
-            healthcare facilities and pharmaceutical companies.</p>
-            
-            <p>Our system is directly linked to the facility's dispensary to monitor medication stock levels 
-            in real-time. When medication is issued and scanned, the system updates the digital registry 
-            instantly. To ensure <b>uninterrupted patient care</b>, every medication is assigned a 
-            minimum threshold; once reached, the system automatically notifies suppliers to replenish 
-            stock before it fully runs out.</p>
-            
-            <p>Through legally binding contracts and our secure ledger, we ensure transparent payment 
-            for all deliverables between public clinics/hospitals and their suppliers, eliminating long 
-            waiting periods for patients and improving regional healthcare outcomes.</p>
-        </div>
+    # Cleaned Mission Statement using Markdown (No more <p> tags!)
+    st.markdown("""
+    <div class="about-box">
+        <h3>Company Overview & Mission</h3>
+        
+        Eco-Chain Procurement Solutions aims to provide a solution to the abrupt shortage 
+        of medication at local clinics and rural hospitals. We act as the **bridge** between healthcare facilities and pharmaceutical companies.
+        
+        Our system is directly linked to the facility's dispensary to monitor medication 
+        stock levels in real-time. When medication is issued and scanned, the system 
+        updates the digital registry instantly. To ensure **uninterrupted patient care**, 
+        every medication is assigned a minimum threshold; once reached, the system 
+        automatically notifies suppliers to replenish stock before it fully runs out.
+        
+        Through legally binding contracts and our secure ledger, we ensure transparent 
+        payment for all deliverables between public clinics/hospitals and their suppliers, 
+        eliminating long waiting periods for patients and improving regional healthcare outcomes.
+    </div>
     """, unsafe_allow_html=True)
 
-    # Added Visual KPI for the Dashboard
+    # Performance Indicators
     st.subheader("🚀 System Performance Goals")
     kpi1, kpi2, kpi3 = st.columns(3)
-    kpi1.metric("Stockout Prevention", "100%", help="Target for critical chronic medication")
-    kpi2.metric("Procurement Speed", "-40%", help="Reduction in lead time compared to manual orders")
-    kpi3.metric("Data Transparency", "High", help="Verified via permanent credit ledger")
+    kpi1.metric("Stockout Prevention", "100%")
+    kpi2.metric("Procurement Speed", "-40%")
+    kpi3.metric("Data Transparency", "High")
 # --- 8. PAGE: REGIONAL NETWORK ---
 elif page == "📍 Regional Network":
     st.title("📍 Gauteng Regional Health Network")
