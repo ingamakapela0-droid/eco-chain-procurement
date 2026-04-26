@@ -96,27 +96,52 @@ elif page == "🏠 Dashboard":
     if os.path.exists("logo.png"):
         st.image("logo.png", width=200)
     
-    # Cleaned Mission Statement using Markdown (No more <p> tags!)
+    # We use a cleaner CSS style here to fix the "weird" font look
     st.markdown("""
-    <div class="about-box">
-        <h3>Company Overview & Mission</h3>
-        
-        Eco-Chain Procurement Solutions aims to provide a solution to the abrupt shortage 
-        of medication at local clinics and rural hospitals. We act as the **bridge** between healthcare facilities and pharmaceutical companies.
-        
-        Our system is directly linked to the facility's dispensary to monitor medication 
-        stock levels in real-time. When medication is issued and scanned, the system 
-        updates the digital registry instantly. To ensure **uninterrupted patient care**, 
-        every medication is assigned a minimum threshold; once reached, the system 
-        automatically notifies suppliers to replenish stock before it fully runs out.
-        
-        Through legally binding contracts and our secure ledger, we ensure transparent 
-        payment for all deliverables between public clinics/hospitals and their suppliers, 
-        eliminating long waiting periods for patients and improving regional healthcare outcomes.
+    <style>
+        .mission-container {
+            background-color: #F1F5F9; 
+            padding: 30px; 
+            border-radius: 15px;
+            border-left: 8px solid #0D9488;
+            margin-top: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .mission-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #1E293B;
+            text-align: justify;
+        }
+        .mission-header {
+            color: #0F172A;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+    </style>
+    
+    <div class="mission-container">
+        <h3 class="mission-header">Company Overview & Mission</h3>
+        <div class="mission-text">
+            <b>Eco-Chain Procurement Solutions</b> aims to provide a solution to the abrupt shortage 
+            of medication at local clinics and rural hospitals. We act as the <b>bridge</b> 
+            between healthcare facilities and pharmaceutical companies.
+            <br><br>
+            Our system is directly linked to the facility's dispensary to monitor medication 
+            stock levels in real-time. When medication is issued and scanned, the system 
+            updates the digital registry instantly. To ensure <b>uninterrupted patient care</b>, 
+            every medication is assigned a minimum threshold; once reached, the system 
+            automatically notifies suppliers to replenish stock before it fully runs out.
+            <br><br>
+            Through legally binding contracts and our secure ledger, we ensure transparent 
+            payment for all deliverables between public clinics/hospitals and their suppliers, 
+            eliminating long waiting periods for patients and improving regional healthcare outcomes.
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
     # Performance Indicators
+    st.write("##") # Adds a bit of space
     st.subheader("🚀 System Performance Goals")
     kpi1, kpi2, kpi3 = st.columns(3)
     kpi1.metric("Stockout Prevention", "100%")
