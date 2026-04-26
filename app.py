@@ -44,7 +44,7 @@ if "authenticated" not in st.session_state:
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 4. SIDEBAR & AUTHENTICATION ---
+# --- 4. SIDEBAR: AUTHENTICATION & NOTIFICATIONS ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=150)
 else:
@@ -52,6 +52,27 @@ else:
 
 user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
+# Internal Notification Logic
+if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🔔 Notification Centre")
+    
+    # Trigger Logic: Scanning HIV Data
+    # Region C (7.1%) and Region F (7.8%) are currently the highest in the report
+    high_risk_regions = [
+        {"name": "Region C (Florida/Discoverers)", "rate": 7.1},
+        {"name": "Region F (South Rand)", "rate": 7.8}
+    ]
+    
+    for alert in high_risk_regions:
+        st.sidebar.error(f"""
+            **⚠️ TRIGGER WARNING: {alert['name']}**
+            High HIV Positivity Rate detected ({alert['rate']}%). 
+            **Action Required:** Increase ART (Antiretroviral) stock levels immediately.
+        """)
+    st.sidebar.markdown("---")
+
+# Regular Login Logic
 if user_type == "Internal Executive/Technical Team":
     st.sidebar.markdown("### 🔐 Executive Login")
     current_role = st.sidebar.selectbox("Access Level:", ["CEO", "COO", "Finance Director", "System Developer"])
