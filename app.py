@@ -88,18 +88,39 @@ if page == "📊 Subscription Portal":
     else:
         st.success("✅ Access Granted: Subscription Verified.")
 
-# --- 7. PAGE: DASHBOARD ---
+# --- 7. PAGE: DASHBOARD (OVERVIEW) ---
 elif page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
-    st.markdown("""
+    
+    # Restored Logo Logic for Dashboard Header
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=200)
+    
+    st.markdown(f"""
         <div class="about-box">
-            <h3>Mission Overview & System Impact</h3>
-            <b>Eco-Chain Procurement Solutions</b> addresses medication shortages by acting as a bridge 
-            between healthcare institutions and pharmaceutical companies. By automating inventory 
-            management, we enable real-time visibility to ensure chronic patients never miss a dose.
+            <h3>Company Overview & Mission</h3>
+            <p><b>Eco-Chain Procurement Solutions</b> aims to provide a solution to the abrupt shortage 
+            of medication at local clinics and rural hospitals. We act as the <b>bridge</b> between 
+            healthcare facilities and pharmaceutical companies.</p>
+            
+            <p>Our system is directly linked to the facility's dispensary to monitor medication stock levels 
+            in real-time. When medication is issued and scanned, the system updates the digital registry 
+            instantly. To ensure <b>uninterrupted patient care</b>, every medication is assigned a 
+            minimum threshold; once reached, the system automatically notifies suppliers to replenish 
+            stock before it fully runs out.</p>
+            
+            <p>Through legally binding contracts and our secure ledger, we ensure transparent payment 
+            for all deliverables between public clinics/hospitals and their suppliers, eliminating long 
+            waiting periods for patients and improving regional healthcare outcomes.</p>
         </div>
     """, unsafe_allow_html=True)
 
+    # Added Visual KPI for the Dashboard
+    st.subheader("🚀 System Performance Goals")
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("Stockout Prevention", "100%", help="Target for critical chronic medication")
+    kpi2.metric("Procurement Speed", "-40%", help="Reduction in lead time compared to manual orders")
+    kpi3.metric("Data Transparency", "High", help="Verified via permanent credit ledger")
 # --- 8. PAGE: REGIONAL NETWORK ---
 elif page == "📍 Regional Network":
     st.title("📍 Gauteng Regional Health Network")
