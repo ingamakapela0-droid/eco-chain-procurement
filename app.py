@@ -199,7 +199,7 @@ elif page == "📈 Clinic Health Insights":
         })
         st.table(tb_df)
 
-# --- 10. INTERNAL: REGISTRY (CREDIT TRACKING) ---
+# --- 10. INTERNAL: REGISTRY (RECORDING NEW DEBT) ---
 elif page == "💊 Medication Registry":
     st.title("💊 Medication Credit Registry")
     st.info("Authorized entries here are saved to the permanent ledger for monthly hospital billing.")
@@ -207,16 +207,8 @@ elif page == "💊 Medication Registry":
     with st.form("credit_entry_form"):
         col1, col2 = st.columns(2)
         with col1:
-            hosp = st.selectbox("Hospital Hub", [
-                "Helen Joseph", "Rahima Moosa", "Chris Hani Bara", 
-                "Charlotte Maxeke", "South Rand", "Sebokeng Hub"
-            ])
-            cat = st.selectbox("Category", [
-                "HIV (Antiretrovirals)", 
-                "TB (Antibiotics)", 
-                "Diabetes (Insulin/Oral)", 
-                "Emergency Supply"
-            ])
+            hosp = st.selectbox("Hospital Hub", ["Helen Joseph", "Rahima Moosa", "Chris Hani Bara", "Charlotte Maxeke", "South Rand", "Sebokeng Hub"])
+            cat = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)", "Diabetes", "Emergency Supply"])
         with col2:
             med_name = st.text_input("Medication Name")
             qty = st.number_input("Quantity (Units)", min_value=1)
@@ -224,10 +216,7 @@ elif page == "💊 Medication Registry":
         unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
         
         if st.form_submit_button("Confirm & Record Credit Transaction"):
-            # Logic to save to your permanent CSV
             df = load_data(TRANSACTION_FILE, ledger_cols)
-            total_val = qty * unit_price
-            
             new_record = pd.DataFrame([{
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Role": current_role,
@@ -235,43 +224,54 @@ elif page == "💊 Medication Registry":
                 "Type": cat,
                 "Name": med_name,
                 "Qty": qty,
-                "Credit_Value": total_val,
-                "Status": "Unpaid (Credit)"
+                "Credit_Value": qty * unit_price,
+                "Status": "Unpaid"  # Default status for new entries
             }])
-            
-            updated_df = pd.concat([df, new_record], ignore_index=True)
-            save_data(updated_df, TRANSACTION_FILE)
-            st.success(f"Successfully recorded R{total_val:,.2f} in credit for {hosp}.")
-            st.balloons()
+            save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
+            st.success(f"Successfully recorded credit for {hosp}.")
 
-# --- 11. INTERNAL: TRANSACTION RECORDS (PERMANENT LEDGER) ---
+# --- 11. INTERNAL: TRANSACTION RECORDS (CLEARANCE SYSTEM) ---
 elif page == "📜 Transaction Records":
-    st.title("📜 Permanent Credit Ledger")
+    st.title("📜 Permanent Credit Ledger & Clearance")
     
-    # Load the data from your CSV
     df = load_data(TRANSACTION_FILE, ledger_cols)
     
     if not df.empty:
-        # Calculate totals for the Finance Director/CEO view
-        unpaid_amt = df[df["Status"] == "Unpaid (Credit)"]["Credit_Value"].sum()
+        # Finance Metrics
+        unpaid_amt = df[df["Status"] == "Unpaid"]["Credit_Value"].sum()
+        st.metric("Total Outstanding (Gauteng Health)", f"R {unpaid_amt:,.2f}")
         
-        c1, c2 = st.columns(2)
-        c1.metric("Total Outstanding Debt", f"R {unpaid_amt:,.2f}", delta_color="inverse")
-        c2.metric("Total Transactions", len(df))
+        st.write("### Manage Transactions")
+        st.write("Click 'Mark as Paid' once a hospital has settled their monthly bill.")
+
+        # Loop through the data to create individual 'Clearance' buttons
+        for index, row in df.iterrows():
+            with st.container():
+                c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
+                c1.write(f"**{row['Hospital']}** ({row['Name']})")
+                c2.write(f"Value: R {row['Credit_Value']:,.2f}")
+                
+                # Show status badge
+                if row['Status'] == "Unpaid":
+                    c3.error("🔴 Unpaid")
+                    if c4.button("Mark Paid", key=f"pay_{index}"):
+                        df.at[index, 'Status'] = "Paid"
+                        save_data(df, TRANSACTION_FILE)
+                        st.rerun()
+                else:
+                    c3.success("🟢 Paid")
+                    if c4.button("Revert", key=f"unpay_{index}"):
+                        df.at[index, 'Status'] = "Unpaid"
+                        save_data(df, TRANSACTION_FILE)
+                        st.rerun()
+                st.divider()
         
-        st.write("### Full Audit Trail")
-        st.dataframe(df, use_container_width=True)
-        
-        # Download functionality for reporting
+        # Download button for audit
         csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Export Monthly Billing Report (CSV)",
-            data=csv,
-            file_name=f"ecochain_audit_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-        )
+        st.download_button("📥 Export Audit Report", csv, "eco_chain_audit.csv", "text/csv")
     else:
-        st.info("The permanent ledger is currently empty. Start recording in the Medication Registry.")
+        st.info("The ledger is currently empty.")
+        
 
 # --- FOOTER ---
 st.sidebar.markdown("---")
