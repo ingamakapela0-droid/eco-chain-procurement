@@ -100,11 +100,9 @@ elif page == "🏠 Dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-# --- 8. PAGE: REGIONAL NETWORK (MAPPED FROM REPORT DATA) ---
+# --- 8. PAGE: REGIONAL NETWORK ---
 elif page == "📍 Regional Network":
     st.title("📍 Gauteng Regional Health Network")
-    st.info("Mapping based on Johannesburg Profile & Health Facilities (2020)")
-    
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown("<div class='region-card'><h3>Region A & B</h3><hr><b>Hubs:</b> Helen Joseph<br><b>Areas:</b> Diepsloot, Midrand, Randburg, Rosebank, Melville</div>", unsafe_allow_html=True)
@@ -115,27 +113,10 @@ elif page == "📍 Regional Network":
     with c3:
         st.markdown("<div class='region-card'><h3>Region G</h3><hr><b>Hubs:</b> Sebokeng Hub<br><b>Areas:</b> Orange Farm, Ennerdale, Lenasia, Eldorado Park</div>", unsafe_allow_html=True)
 
-
-# --- 10. INTERNAL: REGISTRY ---
-elif page == "💊 Medication Registry":
-    st.title("💊 Medication Credit Registry")
-    with st.form("mint_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            hosp = st.selectbox("Hospital Hub", ["Helen Joseph", "Chris Hani Bara", "Rahima Moosa", "Charlotte Maxeke", "Sebokeng Hub"])
-            med = st.text_input("Medication Name")
-        with col2:
-            qty = st.number_input("Quantity", min_value=1)
-            price = st.number_input("Unit Price (ZAR)", min_value=0.0)
-        
-        if st.form_submit_button("Confirm Credit Transaction"):
-            df = load_data(TRANSACTION_FILE, ledger_cols)
-            new_record = pd.DataFrame([{
-                "Timestamp": dateti# --- 9. PAGE: CLINIC HEALTH INSIGHTS ---
+# --- 9. PAGE: CLINIC HEALTH INSIGHTS ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights & Forecasting")
     
-    # Hero Section: Your Official Insight Statement
     st.markdown(f"""
         <div class="insight-box">
             <b>Eco-Chain Procurement Solutions</b> leverages clinical health data to monitor treatment patterns, 
@@ -145,67 +126,108 @@ elif page == "📈 Clinic Health Insights":
             For chronic treatments, the system uses patient data, refill cycles, and historical dispensing records 
             to forecast future needs, ensuring uninterrupted access to medication. It also evaluates daily usage 
             patterns and seasonal disease trends to predict demand for general and emergency medicines, 
-            allowing facilities to stay prepared.<br><br>
-            Overall, these insights enhance operational efficiency, minimize shortages and waste, strengthen 
-            supplier relationships, and establish Eco-Chain as a dependable, data-driven solution in the 
-            healthcare supply chain.
+            allowing facilities to stay prepared.
         </div>
     """, unsafe_allow_html=True)
 
-    # Data Tabs for scannability
     tab1, tab2 = st.tabs(["📊 HIV Epidemic Trends", "🫁 TB Treatment Outcomes"])
 
     with tab1:
-        st.subheader("Table 6: HIV positive test results (April 2019 - March 2020)")
-        hiv_data = pd.DataFrame({
+        st.subheader("Table 6: HIV positive test results (2019/20)")
+        hiv_df = pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
             "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
-            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
-            "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
+            "Positive": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+            "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
         })
-        st.table(hiv_data)
-        st.caption("Source: (DHIS, 2020); Data extracted: 29 November 2020")
+        st.table(hiv_df)
 
     with tab2:
-        st.subheader("Table 4: Drug Sensitive TB treatment outcomes (April 2018 - March 2019)")
-        tb_data = pd.DataFrame({
+        st.subheader("Table 4: TB Treatment Outcomes (2018/19)")
+        tb_df = pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
             "Success Rate": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
             "Death Rate": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"],
             "Lost to Follow-up": ["4.8%", "5.5%", "8.2%", "10.9%", "6.7%", "9.6%", "11.0%"]
         })
-        st.table(tb_data)
-        st.caption("Source: (DHIS, 2020); Data extracted: 30 October 2020")
+        st.table(tb_df)
 
-    # Forecasting Logic Footer
-    st.markdown("---")
-    st.subheader("🔮 Forecasting Metric Logic")
-    st.write("Eco-Chain applies the following logic to automate re-ordering:")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Refill Cycle Analysis", "28 Days", delta="Average Cycle")
-    col2.metric("Shortfall Gap Tracking", "21%", delta_color="inverse", help="ART Shortfall observed in 2019/20")
-    col3.metric("Stock Stability Target", "95%", delta="Buffer optimization")me.now().strftime("%Y-%m-%d %H:%M"),
+# --- 10. INTERNAL: REGISTRY (CREDIT TRACKING) ---
+elif page == "💊 Medication Registry":
+    st.title("💊 Medication Credit Registry")
+    st.info("Authorized entries here are saved to the permanent ledger for monthly hospital billing.")
+    
+    with st.form("credit_entry_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            hosp = st.selectbox("Hospital Hub", [
+                "Helen Joseph", "Rahima Moosa", "Chris Hani Bara", 
+                "Charlotte Maxeke", "South Rand", "Sebokeng Hub"
+            ])
+            cat = st.selectbox("Category", [
+                "HIV (Antiretrovirals)", 
+                "TB (Antibiotics)", 
+                "Diabetes (Insulin/Oral)", 
+                "Emergency Supply"
+            ])
+        with col2:
+            med_name = st.text_input("Medication Name")
+            qty = st.number_input("Quantity (Units)", min_value=1)
+            
+        unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
+        
+        if st.form_submit_button("Confirm & Record Credit Transaction"):
+            # Logic to save to your permanent CSV
+            df = load_data(TRANSACTION_FILE, ledger_cols)
+            total_val = qty * unit_price
+            
+            new_record = pd.DataFrame([{
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Role": current_role,
                 "Hospital": hosp,
-                "Type": "Credit Purchase",
-                "Name": med,
+                "Type": cat,
+                "Name": med_name,
                 "Qty": qty,
-                "Credit_Value": qty * price,
-                "Status": "Unpaid"
+                "Credit_Value": total_val,
+                "Status": "Unpaid (Credit)"
             }])
-            save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
-            st.success("Record saved to permanent ledger.")
+            
+            updated_df = pd.concat([df, new_record], ignore_index=True)
+            save_data(updated_df, TRANSACTION_FILE)
+            st.success(f"Successfully recorded R{total_val:,.2f} in credit for {hosp}.")
+            st.balloons()
 
-# --- 11. INTERNAL: LEDGER ---
+# --- 11. INTERNAL: TRANSACTION RECORDS (PERMANENT LEDGER) ---
 elif page == "📜 Transaction Records":
     st.title("📜 Permanent Credit Ledger")
+    
+    # Load the data from your CSV
     df = load_data(TRANSACTION_FILE, ledger_cols)
+    
     if not df.empty:
-        total = df[df["Status"] == "Unpaid"]["Credit_Value"].sum()
-        st.metric("Total Outstanding Credit", f"R {total:,.2f}")
+        # Calculate totals for the Finance Director/CEO view
+        unpaid_amt = df[df["Status"] == "Unpaid (Credit)"]["Credit_Value"].sum()
+        
+        c1, c2 = st.columns(2)
+        c1.metric("Total Outstanding Debt", f"R {unpaid_amt:,.2f}", delta_color="inverse")
+        c2.metric("Total Transactions", len(df))
+        
+        st.write("### Full Audit Trail")
         st.dataframe(df, use_container_width=True)
+        
+        # Download functionality for reporting
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Export Monthly Billing Report (CSV)",
+            data=csv,
+            file_name=f"ecochain_audit_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+        )
     else:
-        st.info("No records found.")
+        st.info("The permanent ledger is currently empty. Start recording in the Medication Registry.")
 
+# --- FOOTER ---
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain v9.0 | Data Source: DHIS 2020")
+st.sidebar.caption(f"Eco-Chain v9.2 | {datetime.now().year} Secure Ledger")
+st.sidebar.write(f"Logged in as: **{current_role}**")
+    
