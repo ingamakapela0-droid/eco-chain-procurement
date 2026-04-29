@@ -46,7 +46,18 @@ if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
 # --- 4. SIDEBAR: AUTHENTICATION ---
-st.sidebar.title("🌿 Eco-Chain")
+# This section strictly uses your logo file. 
+# Ensure your image is named 'logo.png' in the same folder.
+
+if os.path.exists("logo.png"):
+    st.sidebar.image("logo.png", use_container_width=True)
+else:
+    # If the logo is missing, we use a clean title instead of emojis
+    st.sidebar.markdown("<h2 style='text-align: center; color: #0D9488;'>ECO-CHAIN</h2>", unsafe_allow_html=True)
+    st.sidebar.warning("Upload 'logo.png' to see your branding here.")
+
+st.sidebar.markdown("---")
+
 user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
 if user_type == "Internal Executive/Technical Team":
