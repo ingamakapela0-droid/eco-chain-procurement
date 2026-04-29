@@ -70,11 +70,12 @@ if "authenticated" not in st.session_state:
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 4. SIDEBAR ---
+# --- 4. SIDEBAR: BRANDING & AUTH ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=150)
 else:
-    st.sidebar.title("🌿 Eco-Chain")
+    st.sidebar.markdown("### **ECO-CHAIN**")
+    st.sidebar.caption("Gauteng Health Procurement")
 
 user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
@@ -172,4 +173,25 @@ elif page == "📍 Regional Network":
         st.markdown("<div class='region-card'><h3>Region G</h3><hr><b>Hubs:</b> Sebokeng Hub<br><b>Areas:</b> Orange Farm, Ennerdale, Lenasia, Eldorado Park</div>", unsafe_allow_html=True)
 
 # --- 9. PAGE: CLINIC HEALTH INSIGHTS ---
-elif page ==
+elif page == "📈 Clinic Health Insights":
+    st.title("📈 Regional Health Insights & Forecasting")
+    st.markdown("""
+        <div class="insight-box">
+            <b>Eco-Chain Procurement Solutions</b> leverages clinical health data to monitor treatment patterns, 
+            prescription trends, and medication usage. In the South African context—where conditions such as 
+            <b>HIV/AIDS, tuberculosis, and diabetes</b> are prevalent—this enables healthcare facilities to 
+            accurately estimate the demand for chronic medication.<br><br>
+            For chronic treatments, the system uses patient data, refill cycles, and historical dispensing records 
+            to forecast future needs, ensuring uninterrupted access to medication. It also evaluates daily usage 
+            patterns and seasonal disease trends to predict demand for general and emergency medicines, 
+            allowing facilities to stay prepared.
+        </div>
+    """, unsafe_allow_html=True)
+
+    tab1, tab2 = st.tabs(["📊 HIV Epidemic Trends", "🫁 TB Treatment Outcomes"])
+    with tab1:
+        st.subheader("Table 6: HIV positive test results (2019/20)")
+        hiv_df = pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
+            "Positive":
