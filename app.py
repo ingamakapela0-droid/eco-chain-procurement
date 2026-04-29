@@ -227,69 +227,79 @@ elif page == "📈 Clinic Health Insights":
 # --- 10. INTERNAL: REGISTRY (DYNAMIC SELECTION) ---
 elif page == "💊 Medication Registry":
     st.title("💊 Medication Credit Registry")
-    st.info("Select a category to see available medication types. This ensures data consistency across regions.")
+    st.info("Select a Category first; the Medication Name list will update automatically.")
     
-    # Medication Database (Dictionary)
+    # 1. Expanded Medication Database
     med_options = {
         "HIV (Antiretrovirals)": [
-            "TLD (Tenofovir/Lamivudine/Dolutegravir)",
-            "TEE (Tenofovir/Emtricitabine/Efavirenz)",
-            "Abacavir (ABC) / Lamivudine (3TC)",
-            "Zidovudine (AZT)",
-            "Ritonavir-boosted Lopinavir (LPV/r)"
+            "TLD (Tenofovir/Lamivudine/Dolutegravir)", 
+            "TEE (Tenofovir/Emtricitabine/Efavirenz)", 
+            "Abacavir/Lamivudine", 
+            "Dolutegravir (DTG) 50mg", 
+            "Nevirapine Syrup (Pediatric)"
         ],
         "TB (Antibiotics)": [
-            "Rifafour (RHZE)",
-            "Rifampicin",
-            "Isoniazid",
-            "Ethambutol",
-            "Pyrazinamide"
+            "Rifafour (RHZE) - Fixed Dose", 
+            "Rifampicin (R)", 
+            "Isoniazid (H)", 
+            "Ethambutol (E)", 
+            "Pyrazinamide (Z)",
+            "Bedaquiline (MDR-TB)"
         ],
         "Diabetes": [
-            "Metformin (500mg/850mg)",
-            "Gliclazide",
-            "Insulin (Isophane/Protaphane)",
-            "Insulin (Soluble/Actrapid)",
-            "Glimepiride"
+            "Metformin 500mg", 
+            "Metformin 850mg", 
+            "Gliclazide 80mg", 
+            "Biphasic Insulin (Isophane)", 
+            "Rapid-Acting Insulin"
         ],
         "Emergency Supply": [
-            "Adrenaline Autoinjector",
-            "Salbutamol Inhaler",
-            "Hydrocortisone Injection",
-            "Dextrose 50%",
-            "Naloxone"
+            "Adrenaline", 
+            "Salbutamol Nebules", 
+            "Hydrocortisone", 
+            "Dextrose 50%", 
+            "Medical Oxygen"
         ]
     }
 
-    with st.form("credit_entry_form"):
+    # 2. DYNAMIC SELECTION (Must be outside or handled specially for st.form)
+    # We place the Category selection here so the 'med_name' knows what to show.
+    col_cat, col_med = st.columns(2)
+    
+    with col_cat:
+        selected_cat = st.selectbox("1. Pick Category", list(med_options.keys()))
+    
+    with col_med:
+        # This list now changes instantly when 'selected_cat' changes
+        selected_med = st.selectbox("2. Pick Medication Name", med_options[selected_cat])
+
+    # 3. THE FORM (For data entry)
+    with st.form("credit_entry_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        
         with col1:
             hosp = st.selectbox("Hospital Hub", ["Helen Joseph", "Rahima Moosa", "Chris Hani Bara", "Charlotte Maxeke", "South Rand", "Sebokeng Hub"])
-            cat = st.selectbox("Category", list(med_options.keys()))
-        
         with col2:
-            # Dynamic Dropdown: This updates based on the 'cat' selected above
-            med_name = st.selectbox("Select Medication Name", med_options[cat])
             qty = st.number_input("Quantity (Units)", min_value=1)
             
         unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
         
-        if st.form_submit_button("Confirm & Record Credit Transaction"):
+        # Hidden inputs to keep the selected values from above
+        submit = st.form_submit_button("Confirm & Record Credit Transaction")
+        
+        if submit:
             df = load_data(TRANSACTION_FILE, ledger_cols)
             new_record = pd.DataFrame([{
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Role": current_role,
                 "Hospital": hosp,
-                "Type": cat,
-                "Name": med_name,
+                "Type": selected_cat, # Uses the dynamic selection
+                "Name": selected_med, # Uses the dynamic selection
                 "Qty": qty,
                 "Credit_Value": qty * unit_price,
                 "Status": "Unpaid"
             }])
             save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
-            st.success(f"Successfully recorded credit for {med_name} at {hosp}.")
-
+            st.success(f"Success! {qty} units of {selected_med} recorded for {hosp}.")
 # --- 11. INTERNAL: TRANSACTION RECORDS (CLEARANCE SYSTEM) ---
 elif page == "📜 Transaction Records":
     st.title("📜 Permanent Credit Ledger & Clearance")
