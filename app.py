@@ -224,18 +224,53 @@ elif page == "📈 Clinic Health Insights":
         })
         st.table(tb_df)
 
-# --- 10. INTERNAL: REGISTRY (RECORDING NEW DEBT) ---
+# --- 10. INTERNAL: REGISTRY (DYNAMIC SELECTION) ---
 elif page == "💊 Medication Registry":
     st.title("💊 Medication Credit Registry")
-    st.info("Authorized entries here are saved to the permanent ledger for monthly hospital billing.")
+    st.info("Select a category to see available medication types. This ensures data consistency across regions.")
     
+    # Medication Database (Dictionary)
+    med_options = {
+        "HIV (Antiretrovirals)": [
+            "TLD (Tenofovir/Lamivudine/Dolutegravir)",
+            "TEE (Tenofovir/Emtricitabine/Efavirenz)",
+            "Abacavir (ABC) / Lamivudine (3TC)",
+            "Zidovudine (AZT)",
+            "Ritonavir-boosted Lopinavir (LPV/r)"
+        ],
+        "TB (Antibiotics)": [
+            "Rifafour (RHZE)",
+            "Rifampicin",
+            "Isoniazid",
+            "Ethambutol",
+            "Pyrazinamide"
+        ],
+        "Diabetes": [
+            "Metformin (500mg/850mg)",
+            "Gliclazide",
+            "Insulin (Isophane/Protaphane)",
+            "Insulin (Soluble/Actrapid)",
+            "Glimepiride"
+        ],
+        "Emergency Supply": [
+            "Adrenaline Autoinjector",
+            "Salbutamol Inhaler",
+            "Hydrocortisone Injection",
+            "Dextrose 50%",
+            "Naloxone"
+        ]
+    }
+
     with st.form("credit_entry_form"):
         col1, col2 = st.columns(2)
+        
         with col1:
             hosp = st.selectbox("Hospital Hub", ["Helen Joseph", "Rahima Moosa", "Chris Hani Bara", "Charlotte Maxeke", "South Rand", "Sebokeng Hub"])
-            cat = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)", "Diabetes", "Emergency Supply"])
+            cat = st.selectbox("Category", list(med_options.keys()))
+        
         with col2:
-            med_name = st.text_input("Medication Name")
+            # Dynamic Dropdown: This updates based on the 'cat' selected above
+            med_name = st.selectbox("Select Medication Name", med_options[cat])
             qty = st.number_input("Quantity (Units)", min_value=1)
             
         unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
@@ -250,10 +285,10 @@ elif page == "💊 Medication Registry":
                 "Name": med_name,
                 "Qty": qty,
                 "Credit_Value": qty * unit_price,
-                "Status": "Unpaid"  # Default status for new entries
+                "Status": "Unpaid"
             }])
             save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
-            st.success(f"Successfully recorded credit for {hosp}.")
+            st.success(f"Successfully recorded credit for {med_name} at {hosp}.")
 
 # --- 11. INTERNAL: TRANSACTION RECORDS (CLEARANCE SYSTEM) ---
 elif page == "📜 Transaction Records":
