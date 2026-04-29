@@ -177,21 +177,3 @@ elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights & Forecasting")
     st.markdown("""
         <div class="insight-box">
-            <b>Eco-Chain Procurement Solutions</b> leverages clinical health data to monitor treatment patterns, 
-            prescription trends, and medication usage. In the South African context—where conditions such as 
-            <b>HIV/AIDS, tuberculosis, and diabetes</b> are prevalent—this enables healthcare facilities to 
-            accurately estimate the demand for chronic medication.<br><br>
-            For chronic treatments, the system uses patient data, refill cycles, and historical dispensing records 
-            to forecast future needs, ensuring uninterrupted access to medication. It also evaluates daily usage 
-            patterns and seasonal disease trends to predict demand for general and emergency medicines, 
-            allowing facilities to stay prepared.
-        </div>
-    """, unsafe_allow_html=True)
-
-    tab1, tab2 = st.tabs(["📊 HIV Epidemic Trends", "🫁 TB Treatment Outcomes"])
-    with tab1:
-        st.subheader("Table 6: HIV positive test results (2019/20)")
-        hiv_df = pd.DataFrame({
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
-            "Positive":
