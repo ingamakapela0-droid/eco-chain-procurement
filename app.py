@@ -167,5 +167,100 @@ elif page == "📍 Regional Network":
         st.markdown("<div class='region-card'><h3>Region A & B</h3><hr><b>Hubs:</b> Helen Joseph<br><b>Areas:</b> Diepsloot, Midrand, Randburg, Rosebank, Melville</div>", unsafe_allow_html=True)
         st.markdown("<div class='region-card'><h3>Region E</h3><hr><b>Hubs:</b> Charlotte Maxeke Hub<br><b>Areas:</b> Alexandra, Wynberg, Sandton, Houghton</div>", unsafe_allow_html=True)
     with c2:
-        st.markdown("<div class='region-card'><h3>Region C & D</h3><hr><b>Hubs:</b> Chris Hani Baragwanath<br><b>Areas:
-                    
+        st.markdown("<div class='region-card'><h3>Region C & D</h3><hr><b>Hubs:</b> Chris Hani Baragwanath<br><b>Areas:</b> Soweto, Roodepoort, Florida, Dobsonville</div>", unsafe_allow_html=True)
+        st.markdown("<div class='region-card'><h3>Region F</h3><hr><b>Hubs:</b> South Rand Hub<br><b>Areas:</b> Inner City, Johannesburg South</div>", unsafe_allow_html=True)
+    with c3:
+        st.markdown("<div class='region-card'><h3>Region G</h3><hr><b>Hubs:</b> Sebokeng Hub<br><b>Areas:</b> Orange Farm, Ennerdale, Lenasia, Eldorado Park</div>", unsafe_allow_html=True)
+
+# --- 9. PAGE: CLINIC HEALTH INSIGHTS ---
+elif page == "📈 Clinic Health Insights":
+    st.title("📈 Regional Health Insights & Forecasting")
+    st.markdown("""
+        <div class="insight-box">
+            <b>Eco-Chain Procurement Solutions</b> leverages clinical health data to monitor treatment patterns, 
+            prescription trends, and medication usage. In the South African context—where conditions such as 
+            <b>HIV/AIDS, tuberculosis, and diabetes</b> are prevalent—this enables healthcare facilities to 
+            accurately estimate the demand for chronic medication.<br><br>
+            For chronic treatments, the system uses patient data, refill cycles, and historical dispensing records 
+            to forecast future needs, ensuring uninterrupted access to medication. It also evaluates daily usage 
+            patterns and seasonal disease trends to predict demand for general and emergency medicines, 
+            allowing facilities to stay prepared.
+        </div>
+    """, unsafe_allow_html=True)
+
+    tab1, tab2 = st.tabs(["📊 HIV Epidemic Trends", "🫁 TB Treatment Outcomes"])
+    with tab1:
+        st.subheader("Table 6: HIV positive test results (2019/20)")
+        hiv_df = pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
+            "Positive": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+            "Rate %": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
+        })
+        st.table(hiv_df)
+    with tab2:
+        st.subheader("Table 4: TB Treatment Outcomes (2018/19)")
+        tb_df = pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Success Rate": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
+            "Death Rate": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"],
+            "Lost to Follow-up": ["4.8%", "5.5%", "8.2%", "10.9%", "6.7%", "9.6%", "11.0%"]
+        })
+        st.table(tb_df)
+
+# --- 10. INTERNAL: REGISTRY ---
+elif page == "💊 Medication Registry":
+    st.title("💊 Medication Credit Registry")
+    with st.form("credit_entry_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            hosp = st.selectbox("Hospital Hub", ["Helen Joseph", "Rahima Moosa", "Chris Hani Bara", "Charlotte Maxeke", "South Rand", "Sebokeng Hub"])
+            cat = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)", "Diabetes", "Emergency Supply"])
+        with col2:
+            med_name = st.text_input("Medication Name")
+            qty = st.number_input("Quantity (Units)", min_value=1)
+        unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
+        if st.form_submit_button("Confirm & Record Credit Transaction"):
+            df = load_data(TRANSACTION_FILE, ledger_cols)
+            new_record = pd.DataFrame([{
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "Role": current_role, "Hospital": hosp, "Type": cat, 
+                "Name": med_name, "Qty": qty, "Credit_Value": qty * unit_price, "Status": "Unpaid"
+            }])
+            save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
+            st.success(f"Successfully recorded credit for {hosp}.")
+
+# --- 11. INTERNAL: TRANSACTION RECORDS ---
+elif page == "📜 Transaction Records":
+    st.title("📜 Permanent Credit Ledger & Clearance")
+    df = load_data(TRANSACTION_FILE, ledger_cols)
+    if not df.empty:
+        unpaid_amt = df[df["Status"] == "Unpaid"]["Credit_Value"].sum()
+        st.metric("Total Outstanding (Gauteng Health)", f"R {unpaid_amt:,.2f}")
+        for index, row in df.iterrows():
+            with st.container():
+                c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
+                c1.write(f"**{row['Hospital']}** ({row['Name']})")
+                c2.write(f"Value: R {row['Credit_Value']:,.2f}")
+                if row['Status'] == "Unpaid":
+                    c3.error("🔴 Unpaid")
+                    if c4.button("Mark Paid", key=f"pay_{index}"):
+                        df.at[index, 'Status'] = "Paid"
+                        save_data(df, TRANSACTION_FILE)
+                        st.rerun()
+                else:
+                    c3.success("🟢 Paid")
+                    if c4.button("Revert", key=f"unpay_{index}"):
+                        df.at[index, 'Status'] = "Unpaid"
+                        save_data(df, TRANSACTION_FILE)
+                        st.rerun()
+                st.divider()
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Export Audit Report", csv, "eco_chain_audit.csv", "text/csv")
+    else:
+        st.info("The ledger is currently empty.")
+
+# --- FOOTER ---
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Eco-Chain v9.2 | {datetime.now().year} Secure Ledger")
+st.sidebar.write(f"Logged in as: **{current_role}**")
