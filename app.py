@@ -70,29 +70,42 @@ if "authenticated" not in st.session_state:
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 4. SIDEBAR: BRANDING & AUTH ---
+# --- 4. SIDEBAR: AUTHENTICATION & NOTIFICATIONS ---
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", width=150)
 else:
-    st.sidebar.markdown("### **ECO-CHAIN**")
-    st.sidebar.caption("Gauteng Health Procurement")
+    st.sidebar.title("🌿 Eco-Chain")
 
 user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
 
+# Internal Notification Logic
 if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔔 Notification Centre")
+    
+    # Trigger Logic: Scanning HIV Data
     high_risk_regions = [
         {"name": "Region C (Florida/Discoverers)", "rate": 7.1},
         {"name": "Region F (South Rand)", "rate": 7.8}
     ]
+    
     for alert in high_risk_regions:
-        st.sidebar.error(f"**⚠️ TRIGGER WARNING: {alert['name']}**\nHigh HIV Positivity Rate detected ({alert['rate']}%). **Action Required:** Increase ART stock levels immediately.")
+        st.sidebar.error(f"""
+            **⚠️ TRIGGER WARNING: {alert['name']}**
+            High HIV Positivity Rate detected ({alert['rate']}%). 
+            **Action Required:** Increase ART (Antiretroviral) stock levels immediately.
+        """)
     st.sidebar.markdown("---")
 
+# Updated Login Logic with new roles
 if user_type == "Internal Executive/Technical Team":
     st.sidebar.markdown("### 🔐 Executive Login")
-    current_role = st.sidebar.selectbox("Access Level:", ["CEO", "COO", "Finance Director", "System Developer"])
+    # Added Procurement Manager and Marketing Director here
+    current_role = st.sidebar.selectbox(
+        "Access Level:", 
+        ["CEO", "COO", "Finance Director", "Procurement Manager", "Marketing Director", "System Developer"]
+    )
+    
     if not st.session_state.authenticated:
         if st.sidebar.button("Sign In with MetaMask"):
             st.session_state.authenticated = True
