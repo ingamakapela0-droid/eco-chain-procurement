@@ -58,7 +58,6 @@ if user_type == "Internal Executive/Technical Team" and st.session_state.authent
     st.sidebar.subheader("🔔 Notification Centre")
     
     # Trigger Logic: Scanning HIV Data
-    # Region C (7.1%) and Region F (7.8%) are currently the highest in the report
     high_risk_regions = [
         {"name": "Region C (Florida/Discoverers)", "rate": 7.1},
         {"name": "Region F (South Rand)", "rate": 7.8}
@@ -72,10 +71,15 @@ if user_type == "Internal Executive/Technical Team" and st.session_state.authent
         """)
     st.sidebar.markdown("---")
 
-# Regular Login Logic
+# Updated Login Logic with new roles
 if user_type == "Internal Executive/Technical Team":
     st.sidebar.markdown("### 🔐 Executive Login")
-    current_role = st.sidebar.selectbox("Access Level:", ["CEO", "COO", "Finance Director", "System Developer"])
+    # Added Procurement Manager and Marketing Director here
+    current_role = st.sidebar.selectbox(
+        "Access Level:", 
+        ["CEO", "COO", "Finance Director", "Procurement Manager", "Marketing Director", "System Developer"]
+    )
+    
     if not st.session_state.authenticated:
         if st.sidebar.button("Sign In with MetaMask"):
             st.session_state.authenticated = True
