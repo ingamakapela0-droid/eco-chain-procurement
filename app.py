@@ -208,27 +208,91 @@ elif page == "📈 Clinic Health Insights":
         })
         st.table(tb_df)
 
-# --- 10. INTERNAL: REGISTRY ---
+# --- 10. INTERNAL: REGISTRY (DYNAMIC SELECTION & AUTO-PRICING) ---
 elif page == "💊 Medication Registry":
     st.title("💊 Medication Credit Registry")
-    with st.form("credit_entry_form"):
-        col1, col2 = st.columns(2)
-        with col1:
+    st.info("The Unit Price will auto-suggest based on NDoH 2026 Master Procurement rates.")
+    
+    # 1. Expanded Database with Pricing (Name: [Default Price])
+    med_database = {
+        "HIV (Antiretrovirals)": {
+            "TLD (Tenofovir/Lamivudine/Dolutegravir)": 150.00,
+            "TEE (Tenofovir/Emtricitabine/Efavirenz)": 140.00,
+            "Abacavir/Lamivudine": 110.00,
+            "Dolutegravir (DTG) 50mg": 90.00,
+            "Nevirapine Syrup (Pediatric)": 45.00
+        },
+        "TB (Antibiotics)": {
+            "Rifafour (RHZE) - Fixed Dose": 280.00,
+            "Rifampicin (R)": 65.00,
+            "Isoniazid (H)": 55.00,
+            "Ethambutol (E)": 70.00,
+            "Bedaquiline (MDR-TB)": 950.00
+        },
+        "Diabetes": {
+            "Metformin 500mg": 25.00,
+            "Metformin 850mg": 35.00,
+            "Gliclazide 80mg": 40.00,
+            "Biphasic Insulin (Isophane)": 120.00,
+            "Rapid-Acting Insulin": 135.00
+        },
+        "Emergency Supply": {
+            "Adrenaline": 55.00,
+            "Salbutamol Nebules": 15.00,
+            "Hydrocortisone": 85.00,
+            "Dextrose 50%": 30.00,
+            "Medical Oxygen": 210.00
+        }
+    }
+
+    # 2. DYNAMIC SELECTION
+    col_cat, col_med = st.columns(2)
+    
+    with col_cat:
+        selected_cat = st.selectbox("1. Pick Category", list(med_database.keys()))
+    
+    with col_med:
+        # Get the list of names for the selected category
+        med_names = list(med_database[selected_cat].keys())
+        selected_med = st.selectbox("2. Pick Medication Name", med_names)
+
+    # 3. AUTO-PRICE LOGIC
+    # Pull the default price from our database based on the selection
+    suggested_price = med_database[selected_cat][selected_med]
+
+    # 4. THE ENTRY FORM
+    with st.form("credit_entry_form", clear_on_submit=True):
+        col_hosp, col_qty, col_price = st.columns([2, 1, 1])
+        
+        with col_hosp:
             hosp = st.selectbox("Hospital Hub", ["Helen Joseph", "Rahima Moosa", "Chris Hani Bara", "Charlotte Maxeke", "South Rand", "Sebokeng Hub"])
-            cat = st.selectbox("Category", ["HIV (Antiretrovirals)", "TB (Antibiotics)", "Diabetes", "Emergency Supply"])
-        with col2:
-            med_name = st.text_input("Medication Name")
-            qty = st.number_input("Quantity (Units)", min_value=1)
-        unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, format="%.2f")
-        if st.form_submit_button("Confirm & Record Credit Transaction"):
+        
+        with col_qty:
+            qty = st.number_input("Quantity", min_value=1, value=10) # Default to 10 units
+            
+        with col_price:
+            # The 'value' is set to the suggested_price we found above
+            unit_price = st.number_input("Unit Price (ZAR)", min_value=0.0, value=float(suggested_price), format="%.2f")
+        
+        submit = st.form_submit_button("Confirm & Record Credit Transaction")
+        
+        if submit:
             df = load_data(TRANSACTION_FILE, ledger_cols)
+            total_credit = qty * unit_price
+            
             new_record = pd.DataFrame([{
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "Role": current_role, "Hospital": hosp, "Type": cat, 
-                "Name": med_name, "Qty": qty, "Credit_Value": qty * unit_price, "Status": "Unpaid"
+                "Role": current_role,
+                "Hospital": hosp,
+                "Type": selected_cat,
+                "Name": selected_med,
+                "Qty": qty,
+                "Credit_Value": total_credit,
+                "Status": "Unpaid"
             }])
+            
             save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
-            st.success(f"Successfully recorded credit for {hosp}.")
+            st.success(f"Transaction Secured! Total Credit: R {total_credit:,.2f} for {hosp}")
 
 # --- 11. INTERNAL: TRANSACTION RECORDS ---
 elif page == "📜 Transaction Records":
