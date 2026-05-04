@@ -201,7 +201,7 @@ elif page == "📜 Smart Contract Governance":
     
     with col1:
         st.info("### 🏗️ Governance Summary")
-        st.write("**Contract Address:** `0x71C7...f6d8` ")
+        st.write("**Contract Address:** `0x6f0Dc8Cc835181ddA24beE5b147d320D476874F2` ")
         st.write("**Network:** Polygon Mainnet (Simulated)")
         st.markdown("""
         - **Automated Reordering:** Logic triggers autonomously when stock hits the *Min Threshold*.
