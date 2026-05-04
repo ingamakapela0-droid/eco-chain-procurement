@@ -118,15 +118,89 @@ if user_type == "Internal Executive/Technical Team":
 else:
     current_role = "Public Stakeholder"
 
-# --- 5. NAVIGATION ---
-if user_type == "Public Stakeholder" and not st.session_state.subscribed:
-    nav_options = ["📊 Subscription Portal"]
+# --- 5. NAVIGATION (REPLACEMENT) ---
+# Ensure authenticated state exists
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+# Logic for Page Visibility
+if user_type == "Public Stakeholder":
+    if not st.session_state.subscribed:
+        # Public users see the mission and the rules, but not the deep data
+        nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance"]
+    else:
+        # Subscribed public users see everything except internal registries
+        nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance", "📍 Regional Network", "📈 Clinic Health Insights"]
 else:
-    nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📍 Regional Network", "📈 Clinic Health Insights"]
-    if user_type == "Internal Executive/Technical Team" and st.session_state.authenticated:
+    # Internal Team Page Logic
+    nav_options = ["🏠 Dashboard", "📜 Smart Contract Governance", "📍 Regional Network", "📈 Clinic Health Insights"]
+    if st.session_state.authenticated:
         nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
 
 page = st.sidebar.radio("Navigation", nav_options)
+
+# --- 6. PAGE: SUBSCRIPTION PORTAL ---
+if page == "📊 Subscription Portal":
+    st.title("🛡️ Secure Data Access Portal")
+    if not st.session_state.subscribed:
+        st.warning("🚨 Access Restricted: Regional insights require a secure blockchain payment.")
+        if st.button("🦊 Pay via MetaMask (0.01 ETH)"):
+            st.session_state.subscribed = True
+            st.success("Subscription Verified on Blockchain!")
+            st.rerun()
+    else:
+        st.success("✅ Access Granted: Your wallet has an active data-access NFT/Token.")
+
+# --- NEW PAGE: SMART CONTRACT GOVERNANCE ---
+elif page == "📜 Smart Contract Governance":
+    st.title("📜 On-Chain Governance & Rules")
+    st.markdown("""
+        <div class="insight-box">
+            <b>Transparency Protocol:</b> This page displays the immutable logic of the <b>EcoChainProcurement.sol</b> 
+            smart contract. These rules are hard-coded into the blockchain to prevent human interference 
+            in medication procurement and supplier payments.
+        </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.info("### 🏗️ Governance Summary")
+        st.write("**Contract Address:** `0x71C7...f6d8` ")
+        st.write("**Network:** Polygon Mainnet (Simulated)")
+        st.markdown("""
+        - **Automated Reordering:** Logic triggers when stock hits the *Min Threshold*.
+        - **Escrow Payments:** Funds are locked in the contract until the Hospital signs for delivery.
+        - **Role-Based Access:** Only whitelisted MetaMask IDs can issue medication.
+        """)
+        st.metric("Contract Integrity", "100%", delta="Verified by Audit")
+
+    with col2:
+        st.subheader("Verified Smart Contract Snippet (Solidity)")
+        st.code("""
+// Logic for Automated Procurement
+function issueMedication(string memory _name, uint256 _qty) public onlyStaff {
+    Medication storage med = inventory[_name];
+    require(med.currentStock >= _qty, "Insufficient stock");
+
+    med.currentStock -= _qty; // Real-time deduction
+    
+    // Auto-Trigger Order if threshold is reached
+    if (med.currentStock <= med.minThreshold) {
+        _createPurchaseOrder(_name);
+    }
+}
+
+// Emergency Override for CEO
+function manualTriggerOrder(string memory _name) public onlyCEO {
+    _createPurchaseOrder(_name);
+}
+        """, language="solidity")
+
+# --- 7. PAGE: DASHBOARD (LEAVE THE REST OF YOUR DASHBOARD CODE BELOW THIS) ---
+elif page == "🏠 Dashboard":
+    st.title("🏥 Eco-Chain | Regional Procurement")
+    # ... (rest of your dashboard code)
 
 # --- 6. PAGE: SUBSCRIPTION PORTAL ---
 if page == "📊 Subscription Portal":
