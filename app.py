@@ -118,18 +118,18 @@ if user_type == "Internal Executive/Technical Team":
 else:
     current_role = "Public Stakeholder"
 
-# --- 5. NAVIGATION (REPLACEMENT) ---
-# Ensure authenticated state exists
+# --- 5. NAVIGATION (REPLACEMENT START) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
+if "subscribed" not in st.session_state:
+    st.session_state.subscribed = False
 
-# Logic for Page Visibility
+# Role Selection Logic for Sidebar
 if user_type == "Public Stakeholder":
+    # Public users see basic info; full insights are behind the subscription paywall
     if not st.session_state.subscribed:
-        # Public users see the mission and the rules, but not the deep data
         nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance"]
     else:
-        # Subscribed public users see everything except internal registries
         nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance", "📍 Regional Network", "📈 Clinic Health Insights"]
 else:
     # Internal Team Page Logic
@@ -149,44 +149,44 @@ if page == "📊 Subscription Portal":
         
         with col_q:
             st.markdown("""
-            <div style="border: 1px solid #E2E8F0; padding: 20px; border-radius: 10px; background-color: white;">
-                <h4>Standard Quarterly</h4>
-                <h2 style="color: #0D9488;">R 600.00</h2>
-                <p>Billed every 3 months</p>
+            <div style="border: 1px solid #E2E8F0; padding: 25px; border-radius: 12px; background-color: white; height: 350px;">
+                <h4 style="color: #64748B;">Standard Quarterly</h4>
+                <h2 style="color: #0D9488; margin-top: 0;">R 600.00</h2>
+                <p style="color: #64748B;">Billed every 3 months</p>
                 <hr>
-                <ul>
-                    <li>Gauteng Health Insights</li>
-                    <li>Regional Network Map</li>
-                    <li>Verified Audit Logs</li>
+                <ul style="color: #1E293B; font-size: 0.9rem;">
+                    <li>Access to Gauteng Health Insights</li>
+                    <li>Interactive Regional Network Map</li>
+                    <li>Verified Procurement Audit Logs</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("🦊 Pay R600 (Quarterly)"):
+            if st.button("🦊 Pay R600 (Quarterly)", key="pay_q"):
                 st.session_state.subscribed = True
-                st.success("Quarterly Subscription Active!")
+                st.success("Quarterly Subscription Active via MetaMask!")
                 st.rerun()
 
         with col_a:
             st.markdown("""
-            <div style="border: 2px solid #0D9488; padding: 20px; border-radius: 10px; background-color: #F0FDFA;">
-                <span style="background-color: #0D9488; color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8em;">BEST VALUE: 5% OFF</span>
-                <h4>Annual Access</h4>
-                <h2 style="color: #0D9488;">R 2,280.00</h2>
-                <p>Billed annually (R190/month)</p>
+            <div style="border: 2px solid #0D9488; padding: 25px; border-radius: 12px; background-color: #F0FDFA; height: 350px;">
+                <span style="background-color: #0D9488; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">BEST VALUE: 5% OFF</span>
+                <h4 style="color: #0D9488; margin-top: 10px;">Annual Access</h4>
+                <h2 style="color: #0D9488; margin-top: 0;">R 2,280.00</h2>
+                <p style="color: #64748B;">Billed annually (Save R120)</p>
                 <hr>
-                <ul>
-                    <li>All Quarterly Features</li>
-                    <li>Historical Data Exports</li>
+                <ul style="color: #1E293B; font-size: 0.9rem;">
+                    <li>All Quarterly Features Included</li>
+                    <li>Historical Data CSV Exports</li>
                     <li>Priority Notification Access</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("🦊 Pay R2,280 (Annual)"):
+            if st.button("🦊 Pay R2,280 (Annual)", key="pay_a"):
                 st.session_state.subscribed = True
                 st.success("Annual Subscription Active (5% Discount Applied)!")
                 st.rerun()
     else:
-        st.success("✅ Subscription Active: Your MetaMask wallet address is authorized to view premium clinical insights.")
+        st.success("✅ Subscription Active: Your MetaMask wallet address is authorized to view premium insights.")
         if st.button("Cancel Subscription"):
             st.session_state.subscribed = False
             st.rerun()
@@ -209,51 +209,40 @@ elif page == "📜 Smart Contract Governance":
         st.write("**Contract Address:** `0x71C7...f6d8` ")
         st.write("**Network:** Polygon Mainnet (Simulated)")
         st.markdown("""
-        - **Automated Reordering:** Logic triggers when stock hits the *Min Threshold*.
+        - **Automated Reordering:** Logic triggers autonomously when stock hits the *Min Threshold*.
         - **Escrow Payments:** Funds are locked in the contract until the Hospital signs for delivery.
-        - **Role-Based Access:** Only whitelisted MetaMask IDs can issue medication.
+        - **Role-Based Access:** Only whitelisted MetaMask IDs (Staff) can issue medication.
         """)
         st.metric("Contract Integrity", "100%", delta="Verified by Audit")
 
     with col2:
-        st.subheader("Verified Smart Contract Snippet (Solidity)")
-        st.code("""
-// Logic for Automated Procurement
-function issueMedication(string memory _name, uint256 _qty) public onlyStaff {
-    Medication storage med = inventory[_name];
-    require(med.currentStock >= _qty, "Insufficient stock");
+        st.subheader("Verified Smart Contract Logic")
+        # Styled to match your Mission Font styling
+        st.markdown(f"""
+        <div style="background-color: #F1F5F9; padding: 20px; border-radius: 10px; border-left: 5px solid #0D9488; font-family: 'Inter', sans-serif;">
+            <p style="color: #1E293B; font-weight: bold; margin-bottom: 10px;">
+                Protocol: Automated Inventory & Emergency Override
+            </p>
+            <div style="background-color: #FFFFFF; padding: 15px; border-radius: 5px; border: 1px solid #E2E8F0; font-family: 'Courier New', monospace; font-size: 0.85rem; line-height: 1.5; color: #0F172A;">
+                <span style="color: #0D9488;">// Logic for Automated Procurement</span><br>
+                <b>function</b> issueMedication(string memory _name, uint256 _qty) <b>public</b> onlyStaff {{ <br>
+                &nbsp;&nbsp;Medication storage med = inventory[_name]; <br>
+                &nbsp;&nbsp;require(med.currentStock >= _qty, "Insufficient stock"); <br><br>
+                &nbsp;&nbsp;med.currentStock -= _qty; <span style="color: #0D9488;">// Real-time deduction</span> <br><br>
+                &nbsp;&nbsp;<b>if</b> (med.currentStock <= med.minThreshold) {{ <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;_createPurchaseOrder(_name); <br>
+                &nbsp;&nbsp;}} <br>
+                }} <br><br>
+                <span style="color: #0D9488;">// Emergency Override for CEO</span><br>
+                <b>function</b> manualTriggerOrder(string memory _name) <b>public</b> onlyCEO {{ <br>
+                &nbsp;&nbsp;_createPurchaseOrder(_name); <br>
+                }}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.caption("Last synchronized with Blockchain: Today")
 
-    med.currentStock -= _qty; // Real-time deduction
-    
-    // Auto-Trigger Order if threshold is reached
-    if (med.currentStock <= med.minThreshold) {
-        _createPurchaseOrder(_name);
-    }
-}
-
-// Emergency Override for CEO
-function manualTriggerOrder(string memory _name) public onlyCEO {
-    _createPurchaseOrder(_name);
-}
-        """, language="solidity")
-
-# --- 7. PAGE: DASHBOARD (LEAVE THE REST OF YOUR DASHBOARD CODE BELOW THIS) ---
-elif page == "🏠 Dashboard":
-    st.title("🏥 Eco-Chain | Regional Procurement")
-    # ... (rest of your dashboard code)
-
-# --- 6. PAGE: SUBSCRIPTION PORTAL ---
-if page == "📊 Subscription Portal":
-    st.title("🛡️ Secure Data Access Portal")
-    if not st.session_state.subscribed and user_type == "Public Stakeholder":
-        st.warning("🚨 Access Restricted: Secure blockchain payment required.")
-        if st.button("🦊 Pay & Secure Access"):
-            st.session_state.subscribed = True
-            st.rerun()
-    else:
-        st.success("✅ Access Granted: Subscription Verified.")
-
-# --- 7. PAGE: DASHBOARD ---
+# --- 7. PAGE: DASHBOARD (REPLACEMENT END) ---
 elif page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
     if os.path.exists("logo.png"):
