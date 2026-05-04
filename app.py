@@ -169,7 +169,6 @@ elif page == "🏠 Dashboard":
     st.write("##")
     kpi1, kpi2, kpi3 = st.columns(3)
     kpi1.metric("Stockout Prevention", "100%")
-    kpi2.metric("Procurement Speed", "-40%")
     kpi3.metric("Data Transparency", "High")
 
 # --- 8. PAGE: REGIONAL NETWORK ---
