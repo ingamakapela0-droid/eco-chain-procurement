@@ -142,14 +142,54 @@ page = st.sidebar.radio("Navigation", nav_options)
 # --- 6. PAGE: SUBSCRIPTION PORTAL ---
 if page == "📊 Subscription Portal":
     st.title("🛡️ Secure Data Access Portal")
+    st.markdown("### Choose your transparency access level")
+    
     if not st.session_state.subscribed:
-        st.warning("🚨 Access Restricted: Regional insights require a secure blockchain payment.")
-        if st.button("🦊 Pay via MetaMask (0.01 ETH)"):
-            st.session_state.subscribed = True
-            st.success("Subscription Verified on Blockchain!")
-            st.rerun()
+        col_q, col_a = st.columns(2)
+        
+        with col_q:
+            st.markdown("""
+            <div style="border: 1px solid #E2E8F0; padding: 20px; border-radius: 10px; background-color: white;">
+                <h4>Standard Quarterly</h4>
+                <h2 style="color: #0D9488;">R 600.00</h2>
+                <p>Billed every 3 months</p>
+                <hr>
+                <ul>
+                    <li>Gauteng Health Insights</li>
+                    <li>Regional Network Map</li>
+                    <li>Verified Audit Logs</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🦊 Pay R600 (Quarterly)"):
+                st.session_state.subscribed = True
+                st.success("Quarterly Subscription Active!")
+                st.rerun()
+
+        with col_a:
+            st.markdown("""
+            <div style="border: 2px solid #0D9488; padding: 20px; border-radius: 10px; background-color: #F0FDFA;">
+                <span style="background-color: #0D9488; color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8em;">BEST VALUE: 5% OFF</span>
+                <h4>Annual Access</h4>
+                <h2 style="color: #0D9488;">R 2,280.00</h2>
+                <p>Billed annually (R190/month)</p>
+                <hr>
+                <ul>
+                    <li>All Quarterly Features</li>
+                    <li>Historical Data Exports</li>
+                    <li>Priority Notification Access</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🦊 Pay R2,280 (Annual)"):
+                st.session_state.subscribed = True
+                st.success("Annual Subscription Active (5% Discount Applied)!")
+                st.rerun()
     else:
-        st.success("✅ Access Granted: Your wallet has an active data-access NFT/Token.")
+        st.success("✅ Subscription Active: Your MetaMask wallet address is authorized to view premium clinical insights.")
+        if st.button("Cancel Subscription"):
+            st.session_state.subscribed = False
+            st.rerun()
 
 # --- NEW PAGE: SMART CONTRACT GOVERNANCE ---
 elif page == "📜 Smart Contract Governance":
