@@ -227,79 +227,86 @@ elif page == "📈 Clinic Health Insights":
         threshold) to account for high patient turnover.
     """)
 
-# --- 11. INTERNAL: MEDICATION REGISTRY (RESTORED PRICES) ---
+# --- 11. INTERNAL: MEDICATION REGISTRY (AUTOMATED LOGISTICS) ---
 elif page == "💊 Medication Registry":
-    st.title("💊 Medication Credit Registry")
+    st.title("💊 Medication Credit Registry & Inventory")
+    
+    # Mapping table for automatic transportation logic
+    hub_transport_map = {
+        "Helen Joseph Hospital (Region A/B)": "GDoH Region A Logistics Unit",
+        "Chris Hani Baragwanath (Region D)": "Soweto Health Transport NGO",
+        "Charlotte Maxeke Academic (Region F)": "Inner City Medical Courier",
+        "Leratong Hospital (Region C)": "West Rand Logistics Hub",
+        "Sebokeng Hospital Hub (Region G)": "Sedibeng District Transport",
+        "Edenvale Hospital (Region E)": "Region E Distribution Services",
+        "Tembisa Tertiary Hospital": "Ekurhuleni Health Logistics"
+    }
+
     with st.form("credit_entry", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        med = col1.text_input("Medication Name (e.g. Dolutegravir)")
-        hosp = col1.selectbox("Hospital Hub", ["Helen Joseph", "Chris Hani Bara", "South Rand", "Sebokeng Hub"])
-        qty = col2.number_input("Quantity", min_value=1)
-        price = col2.number_input("Unit Price (ZAR)", min_value=0.0, value=125.50) # Example default price
-        if st.form_submit_button("Secure Transaction"):
-            df = load_data(TRANSACTION_FILE, ledger_cols)
-            new_record = pd.DataFrame([{"Timestamp": datetime.now().strftime("%Y-%m-%d"), "Role": current_role, "Hospital": hosp, "Type": "Manual Entry", "Name": med, "Qty": qty, "Credit_Value": qty*price, "Status": "Unpaid"}])
-            save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
-            st.success("Transaction Ledger Updated")
+        category = col1.selectbox("Disease Category", ["HIV/AIDS (ART)", "TB Treatment", "Chronic", "Acute"])
+        med = col1.selectbox("Medication Name", ["Dolutegravir 50mg", "Tenofovir 300mg", "Rifampicin 600mg", "Insulin"])
+        
+        hosp = col2.selectbox("Destination Hospital Hub", list(hub_transport_map.keys()))
+        qty = col2.number_input("Quantity", min_value=1, value=100)
+        price = col2.number_input("Unit Price (ZAR)", min_value=0.0, value=145.50)
+        
+        if st.form_submit_button("Log Transaction & Dispatch Shipment"):
+            # 1. Update Financial Ledger
+            df_ledger = load_data(TRANSACTION_FILE, ledger_cols)
+            new_ledger = pd.DataFrame([{
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "Role": current_role, "Hospital": hosp, "Type": f"{category} Order",
+                "Name": med, "Qty": qty, "Credit_Value": qty*price, "Status": "Ordered"
+            }])
+            save_data(pd.concat([df_ledger, new_ledger], ignore_index=True), TRANSACTION_FILE)
 
-# --- 12. INTERNAL: MOVEMENT TRACKER (FIXED KEYERROR) ---
+            # 2. AUTOMATIC SHIPMENT CREATION (The "Transportation Part")
+            df_track = load_data(TRACKING_FILE, track_cols)
+            new_shipment = pd.DataFrame([{
+                "ID": f"TRK-{datetime.now().strftime('%M%S')}",
+                "Medication": med,
+                "Hospital": hosp,
+                "Supplier": "Eco-Chain Central Pharma", # Defaulting the supplier
+                "Movement_Status": "📦 Dispatched",
+                "NGO_Partner": hub_transport_map[hosp], # Auto-assigned based on hospital
+                "Batch_No": f"LOT-{datetime.now().strftime('%d%m')}"
+            }])
+            save_data(pd.concat([df_track, new_shipment], ignore_index=True), TRACKING_FILE)
+            
+            st.success(f"✅ Transaction logged. Shipment automatically dispatched via {hub_transport_map[hosp]}.")
+
+# --- 12. INTERNAL: MOVEMENT TRACKER (AUTOMATED VIEW) ---
 elif page == "🚚 Movement Tracker":
     st.title("🚚 Medication Movement Monitoring")
-    st.write("Tracking the digital handshake between Suppliers and NGO/Clinic transporters.")
+    st.markdown("---")
     
-    # Load data
     track_df = load_data(TRACKING_FILE, track_cols)
     
-    # SELF-HEALING BLOCK: This prevents the KeyError by ensuring all columns exist
+    # Self-healing for data consistency
     for col in track_cols:
         if col not in track_df.columns:
-            track_df[col] = "Not Specified" 
+            track_df[col] = "Auto-Assigned"
 
-    with st.expander("📝 Record Order Shipment Movement"):
-        with st.form("track_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            m = col1.text_input("Medication Name")
-            s = col1.text_input("Supplier Name")
-            h = col2.selectbox("Destination Hub", ["Helen Joseph", "Chris Hani Bara", "South Rand", "Sebokeng Hub"])
-            n = col2.text_input("Transporter (NGO/Clinic Name)")
-            
-            if st.form_submit_button("Start Movement Visibility"):
-                if m and s and n:
-                    new_t = pd.DataFrame([{
-                        "ID": f"MOV-{datetime.now().strftime('%M%S')}", 
-                        "Medication": m, 
-                        "Hospital": h, 
-                        "Supplier": s, 
-                        "Movement_Status": "📦 Dispatched", 
-                        "NGO_Partner": n, 
-                        "Batch_No": "B-VERIFIED"
-                    }])
-                    track_df = pd.concat([track_df, new_t], ignore_index=True)
-                    save_data(track_df, TRACKING_FILE)
-                    st.success("Movement Tracked Successfully!")
-                    st.rerun()
-                else:
-                    st.error("Please fill in all fields to start tracking.")
-
-    # Displaying the tracking cards
     if track_df.empty:
-        st.info("No active movements found.")
+        st.info("No active shipments currently in the network. Orders placed in the Registry will appear here.")
     else:
+        st.subheader("Active Regional Shipments")
         for idx, row in track_df.iterrows():
             with st.container():
                 c1, c2, c3 = st.columns([1, 3, 1])
                 c1.code(row['ID'])
                 
-                # The line that was causing the error:
-                med_info = f"**{row['Medication']}** | Supplier: {row['Supplier']} ➔ Clinic: {row['Hospital']}"
-                partner_info = f"Transporter: {row['NGO_Partner']}"
+                # Dynamic status display
+                med_info = f"**{row['Medication']}** ➔ {row['Hospital']}"
+                partner_info = f"Managed by: {row['NGO_Partner']}"
                 
                 c2.write(med_info)
                 c2.caption(partner_info)
                 
                 if "Dispatched" in str(row['Movement_Status']):
-                    if c3.button("Confirm Arrival", key=f"arv_{idx}"):
-                        track_df.at[idx, 'Movement_Status'] = "✅ Arrived"
+                    if c3.button("Confirm Final Arrival", key=f"arv_{idx}"):
+                        track_df.at[idx, 'Movement_Status'] = "✅ Delivered"
                         save_data(track_df, TRACKING_FILE)
                         st.rerun()
                 else:
