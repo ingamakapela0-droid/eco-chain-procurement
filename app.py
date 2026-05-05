@@ -199,36 +199,69 @@ elif page == "💊 Medication Registry":
             save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
             st.success("Transaction Ledger Updated")
 
-# --- 12. INTERNAL: MOVEMENT TRACKER (ISOLATED FEATURE) ---
+# --- 12. INTERNAL: MOVEMENT TRACKER (FIXED KEYERROR) ---
 elif page == "🚚 Movement Tracker":
     st.title("🚚 Medication Movement Monitoring")
     st.write("Tracking the digital handshake between Suppliers and NGO/Clinic transporters.")
+    
+    # Load data
     track_df = load_data(TRACKING_FILE, track_cols)
     
-    with st.expander("📝 Record Order Shipment Movement"):
-        with st.form("track_form"):
-            col1, col2 = st.columns(2)
-            m = col1.text_input("Medication")
-            s = col1.text_input("Supplier")
-            h = col2.selectbox("Destination Hub", ["Helen Joseph", "Chris Hani Bara", "South Rand", "Sebokeng Hub"])
-            n = col2.text_input("Transporter (NGO/Clinic)")
-            if st.form_submit_button("Start Movement Visibility"):
-                new_t = pd.DataFrame([{"ID": f"MOV-{datetime.now().strftime('%M%S')}", "Medication": m, "Hospital": h, "Supplier": s, "Movement_Status": "📦 Dispatched", "NGO_Partner": n, "Batch_No": "B-VERIFIED"}])
-                save_data(pd.concat([track_df, new_t], ignore_index=True), TRACKING_FILE)
-                st.rerun()
+    # SELF-HEALING BLOCK: This prevents the KeyError by ensuring all columns exist
+    for col in track_cols:
+        if col not in track_df.columns:
+            track_df[col] = "Not Specified" 
 
-    for idx, row in track_df.iterrows():
-        c1, c2, c3 = st.columns([1, 3, 1])
-        c1.code(row['ID'])
-        c2.write(f"**{row['Medication']}** | Supplier: {row['Supplier']} ➔ Clinic: {row['Hospital']} ({row['NGO_Partner']})")
-        if "Dispatched" in row['Movement_Status']:
-            if c3.button("Confirm Arrival", key=f"arv_{idx}"):
-                track_df.at[idx, 'Movement_Status'] = "✅ Arrived"
-                save_data(track_df, TRACKING_FILE)
-                st.rerun()
-        else:
-            c3.success("Arrived")
-        st.divider()
+    with st.expander("📝 Record Order Shipment Movement"):
+        with st.form("track_form", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            m = col1.text_input("Medication Name")
+            s = col1.text_input("Supplier Name")
+            h = col2.selectbox("Destination Hub", ["Helen Joseph", "Chris Hani Bara", "South Rand", "Sebokeng Hub"])
+            n = col2.text_input("Transporter (NGO/Clinic Name)")
+            
+            if st.form_submit_button("Start Movement Visibility"):
+                if m and s and n:
+                    new_t = pd.DataFrame([{
+                        "ID": f"MOV-{datetime.now().strftime('%M%S')}", 
+                        "Medication": m, 
+                        "Hospital": h, 
+                        "Supplier": s, 
+                        "Movement_Status": "📦 Dispatched", 
+                        "NGO_Partner": n, 
+                        "Batch_No": "B-VERIFIED"
+                    }])
+                    track_df = pd.concat([track_df, new_t], ignore_index=True)
+                    save_data(track_df, TRACKING_FILE)
+                    st.success("Movement Tracked Successfully!")
+                    st.rerun()
+                else:
+                    st.error("Please fill in all fields to start tracking.")
+
+    # Displaying the tracking cards
+    if track_df.empty:
+        st.info("No active movements found.")
+    else:
+        for idx, row in track_df.iterrows():
+            with st.container():
+                c1, c2, c3 = st.columns([1, 3, 1])
+                c1.code(row['ID'])
+                
+                # The line that was causing the error:
+                med_info = f"**{row['Medication']}** | Supplier: {row['Supplier']} ➔ Clinic: {row['Hospital']}"
+                partner_info = f"Transporter: {row['NGO_Partner']}"
+                
+                c2.write(med_info)
+                c2.caption(partner_info)
+                
+                if "Dispatched" in str(row['Movement_Status']):
+                    if c3.button("Confirm Arrival", key=f"arv_{idx}"):
+                        track_df.at[idx, 'Movement_Status'] = "✅ Arrived"
+                        save_data(track_df, TRACKING_FILE)
+                        st.rerun()
+                else:
+                    c3.success("Arrived")
+                st.divider()
 
 # --- 13. INTERNAL: TRANSACTION RECORDS (RESTORED) ---
 elif page == "📜 Transaction Records":
