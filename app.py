@@ -9,54 +9,22 @@ st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    
     .main { background-color: #F8FAFC; }
-    
-    html, body, [class*="css"], .stMarkdown {
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    .mission-container {
-        background-color: #F1F5F9; 
-        padding: 30px; 
-        border-radius: 15px;
-        border-left: 8px solid #0D9488;
-        margin-top: 20px;
-    }
-
-    .mission-header {
-        color: #0F172A;
-        margin-bottom: 15px;
-        font-weight: 700;
-        font-size: 1.5rem;
-    }
-
-    .mission-text {
-        font-size: 1.1rem;
-        line-height: 1.8;
-        color: #1E293B;
-        text-align: justify;
-    }
-
-    .insight-box {
-        background-color: #FFFFFF; padding: 25px; border-radius: 10px;
-        border: 1px solid #E2E8F0; margin-bottom: 25px; text-align: justify;
-        line-height: 1.6; color: #1E293B;
-    }
-
-    .region-card {
-        background-color: #FFFFFF; padding: 20px; border-radius: 12px;
-        border: 1px solid #E2E8F0; margin-bottom: 20px; min-height: 280px;
-    }
+    html, body, [class*="css"], .stMarkdown { font-family: 'Inter', sans-serif !important; }
+    .mission-container { background-color: #F1F5F9; padding: 30px; border-radius: 15px; border-left: 8px solid #0D9488; margin-top: 20px; }
+    .mission-header { color: #0F172A; margin-bottom: 15px; font-weight: 700; font-size: 1.5rem; }
+    .mission-text { font-size: 1.1rem; line-height: 1.8; color: #1E293B; text-align: justify; }
+    .insight-box { background-color: #FFFFFF; padding: 25px; border-radius: 10px; border: 1px solid #E2E8F0; margin-bottom: 25px; text-align: justify; line-height: 1.6; color: #1E293B; }
+    .region-card { background-color: #FFFFFF; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 20px; min-height: 280px; }
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. PERMANENT STORAGE HELPERS ---
+# --- 2. STORAGE HELPERS ---
 TRANSACTION_FILE = "permanent_ledger.csv"
 TRACKING_FILE = "shipment_tracker.csv"
-ledger_cols = ["Timestamp", "Role", "Hospital", "Type", "Name", "Qty", "Credit_Value", "Status"]
-track_cols = ["ID", "Medication", "Hospital", "Supplier", "Status", "ETA", "Batch_No"]
+ledger_cols = ["Timestamp", "Role", "Entity", "Type", "Name", "Qty", "Credit_Value", "Status"]
+track_cols = ["ID", "Medication", "Destination_Entity", "Supplier", "Movement_Status", "NGO_Partner", "Batch_No"]
 
 def save_data(df, filename):
     df.to_csv(filename, index=False)
@@ -72,21 +40,12 @@ if "authenticated" not in st.session_state:
 if "subscribed" not in st.session_state:
     st.session_state.subscribed = False
 
-# --- 4. SIDEBAR: AUTHENTICATION & NOTIFICATIONS ---
-if os.path.exists("logo.png"):
-    st.sidebar.image("logo.png", width=150)
-else:
-    st.sidebar.title("🌿 Eco-Chain")
+# --- 4. SIDEBAR ---
+user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/NGO Partner"])
 
-user_type = st.sidebar.radio("Identify Your Role:", ["Public Stakeholder", "Internal Executive/Technical Team"])
-
-if user_type == "Internal Executive/Technical Team":
-    st.sidebar.markdown("### 🔐 Executive Login")
-    current_role = st.sidebar.selectbox(
-        "Access Level:", 
-        ["CEO", "COO", "Finance Director", "Procurement Manager", "Marketing Director", "System Developer"]
-    )
-    
+if user_type == "Internal Executive/NGO Partner":
+    st.sidebar.markdown("### 🔐 Secure Login")
+    current_role = st.sidebar.selectbox("Access Level:", ["Eco-Chain Admin", "NGO Representative", "Clinic Manager", "Supplier"])
     if not st.session_state.authenticated:
         if st.sidebar.button("Sign In with MetaMask"):
             st.session_state.authenticated = True
@@ -101,21 +60,19 @@ else:
 
 # --- 5. NAVIGATION ---
 if user_type == "Public Stakeholder":
-    if not st.session_state.subscribed:
-        nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance"]
-    else:
-        nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance", "📍 Regional Network", "📈 Clinic Health Insights"]
+    nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance"]
+    if st.session_state.subscribed:
+        nav_options += ["📍 Regional Network", "📈 Clinic Health Insights"]
 else:
     nav_options = ["🏠 Dashboard", "📜 Smart Contract Governance", "📍 Regional Network", "📈 Clinic Health Insights"]
     if st.session_state.authenticated:
-        nav_options += ["💊 Medication Registry", "🚚 Logistics Tracking", "📜 Transaction Records"]
+        nav_options += ["💊 Medication Registry", "🚚 Movement Tracker", "📜 Transaction Records"]
 
 page = st.sidebar.radio("Navigation", nav_options)
 
-# --- 6. PAGE: DASHBOARD ---
+# --- 6. DASHBOARD ---
 if page == "🏠 Dashboard":
     st.title("🏥 Eco-Chain | Regional Procurement")
-    
     st.markdown("""
     <div class="mission-container">
         <h3 class="mission-header">Company Overview & Mission</h3>
@@ -136,153 +93,104 @@ if page == "🏠 Dashboard":
         </div>
     </div>
     """, unsafe_allow_html=True)
-
     st.write("##")
-    kpi1, kpi2, kpi3 = st.columns(3)
-    kpi1.metric("Stockout Prevention", "100%")
-    kpi2.metric("Gauteng Hubs", "7 Regions")
-    kpi3.metric("Data Transparency", "High")
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Stockout Prevention", "100%")
+    k2.metric("NGO Partners", "Active")
+    k3.metric("Data Integrity", "Verified")
 
-# --- 7. PAGE: SUBSCRIPTION PORTAL ---
+# --- 7. SUBSCRIPTION ---
 elif page == "📊 Subscription Portal":
     st.title("🛡️ Secure Data Access Portal")
     if not st.session_state.subscribed:
-        col_q, col_a = st.columns(2)
-        with col_q:
-            st.markdown('<div style="border: 1px solid #E2E8F0; padding: 25px; border-radius: 12px; background: white;"><h4>Standard Quarterly</h4><h2>R 600.00</h2><hr><ul><li>Regional Map Access</li><li>Procurement Audit Logs</li></ul></div>', unsafe_allow_html=True)
-            if st.button("🦊 Pay R600 (Quarterly)"):
-                st.session_state.subscribed = True
-                st.rerun()
-        with col_a:
-            st.markdown('<div style="border: 2px solid #0D9488; padding: 25px; border-radius: 12px; background: #F0FDFA;"><h4>Annual Access</h4><h2>R 2,280.00</h2><hr><ul><li>CSV Data Exports</li><li>Priority Notifications</li></ul></div>', unsafe_allow_html=True)
-            if st.button("🦊 Pay R2,280 (Annual)"):
-                st.session_state.subscribed = True
-                st.rerun()
+        c1, c2 = st.columns(2)
+        with c1: 
+            st.info("Quarterly: R600")
+            if st.button("Pay Quarterly"): st.session_state.subscribed = True; st.rerun()
+        with c2: 
+            st.success("Annual: R2,280")
+            if st.button("Pay Annual"): st.session_state.subscribed = True; st.rerun()
     else:
         st.success("✅ Subscription Active.")
-        if st.button("Cancel Subscription"):
-            st.session_state.subscribed = False
-            st.rerun()
 
-# --- 8. PAGE: SMART CONTRACT GOVERNANCE ---
+# --- 8. SMART CONTRACTS ---
 elif page == "📜 Smart Contract Governance":
-    st.title("📜 On-Chain Governance & Rules")
-    st.markdown('<div class="insight-box">Transparency Protocol: Operational Logic of <b>EcoChainProcurement.sol</b></div>', unsafe_allow_html=True)
-    st.code("""
-    IF (Remaining Stock <= Min Threshold) {
-        execute(_createPurchaseOrder);
-        notifySupplier(SupplierID);
-    }
-    """, language="javascript")
+    st.title("📜 On-Chain Governance")
+    st.code("// IF (Medication_Arrived == TRUE) THEN Release_Payment(Supplier);", language="javascript")
 
-# --- 9. PAGE: REGIONAL NETWORK ---
+# --- 9. REGIONAL NETWORK ---
 elif page == "📍 Regional Network":
     st.title("📍 Gauteng Regional Health Network")
     c1, c2, c3 = st.columns(3)
-    with c1: st.markdown("<div class='region-card'><h3>Region A & B</h3><hr>Hubs: Helen Joseph</div>", unsafe_allow_html=True)
-    with c2: st.markdown("<div class='region-card'><h3>Region C & D</h3><hr>Hubs: Chris Hani Bara</div>", unsafe_allow_html=True)
-    with c3: st.markdown("<div class='region-card'><h3>Region G</h3><hr>Hubs: Sebokeng Hub</div>", unsafe_allow_html=True)
+    c1.markdown("<div class='region-card'><b>Region A & B</b><br>Hub: Helen Joseph</div>", unsafe_allow_html=True)
+    c2.markdown("<div class='region-card'><b>Region C & D</b><br>Hub: Chris Hani Bara</div>", unsafe_allow_html=True)
+    c3.markdown("<div class='region-card'><b>Region G</b><br>Hub: Sebokeng Hub</div>", unsafe_allow_html=True)
 
-# --- 10. PAGE: CLINIC HEALTH INSIGHTS ---
+# --- 10. CLINIC HEALTH INSIGHTS (RESTORED) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights & Forecasting")
-    
-    st.markdown("""
-    <div class="insight-box">
-        <b>Data Utilization:</b> The following insights are derived from the 2022/23 Gauteng Department of Health 
-        annual reports. Eco-Chain uses this data to forecast medication demand for <b>ART (Antiretroviral Therapy)</b> 
-        and chronic disease management across specific districts.
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Restored Detailed Data Table
+    st.markdown('<div class="insight-box">Insights derived from GDoH Reports. Eco-Chain forecasts demand for ART and chronic medication across Gauteng.</div>', unsafe_allow_html=True)
     health_data = {
-        "Health District / Region": [
-            "Region A (Diepsloot/Sandton)", 
-            "Region B (Rosebank/Northcliff)", 
-            "Region C (Roodepoort/Doornkop)", 
-            "Region D (Soweto)", 
-            "Region E (Alexandra/Wynberg)", 
-            "Region F (Inner City/Johannesburg S)", 
-            "Region G (Ennerdale/Orange Farm)"
-        ],
+        "Region": ["A (Diepsloot)", "B (Rosebank)", "C (Roodepoort)", "D (Soweto)", "E (Alexandra)", "F (Inner City)", "G (Orange Farm)"],
         "HIV Positivity Rate (%)": ["5.9%", "4.2%", "6.1%", "7.4%", "6.8%", "7.8%", "6.2%"],
-        "Total Positive Tests": [18718, 12450, 15902, 28441, 19203, 21197, 18773],
-        "Antenatal HIV Prevalence": ["28.1%", "24.5%", "29.0%", "31.2%", "27.4%", "30.5%", "32.1%"]
+        "Antenatal Prevalence": ["28.1%", "24.5%", "29.0%", "31.2%", "27.4%", "30.5%", "32.1%"]
     }
-    
-    df_health = pd.DataFrame(health_data)
-    
-    # Displaying the data
-    st.subheader("Public Health Indicators by Region")
-    st.dataframe(df_health, use_container_width=True, hide_index=True)
-    
-    st.write("---")
-    
-    # Forecasting Logic Insight
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.info("💡 **Eco-Chain Forecast:** Regions D and F show the highest demand for ART replenishment. Our system prioritizes 'Buffer Stock' for these hubs to prevent stockouts during high-volume periods.")
-    with col_b:
-        st.warning("⚠️ **Alert:** Region G shows an increasing trend in Antenatal prevalence; recommending automated threshold increase for pediatric medication.")
+    st.dataframe(pd.DataFrame(health_data), use_container_width=True)
 
-# --- 11. INTERNAL: REGISTRY ---
-# ... (rest of the code follows as in the previous prompt)
-
-# --- 11. INTERNAL: REGISTRY ---
+# --- 11. MEDICATION REGISTRY ---
 elif page == "💊 Medication Registry":
-    st.title("💊 Medication Credit Registry")
-    with st.form("credit_entry", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        med = col1.text_input("Medication Name")
-        hosp = col1.selectbox("Hospital Hub", ["Helen Joseph", "Chris Hani Bara", "South Rand", "Sebokeng Hub"])
-        qty = col2.number_input("Quantity", min_value=1)
-        price = col2.number_input("Unit Price (ZAR)", min_value=0.0)
-        if st.form_submit_button("Secure Transaction"):
-            df = load_data(TRANSACTION_FILE, ledger_cols)
-            new_record = pd.DataFrame([{"Timestamp": datetime.now().strftime("%Y-%m-%d"), "Role": current_role, "Hospital": hosp, "Type": "Manual Entry", "Name": med, "Qty": qty, "Credit_Value": qty*price, "Status": "Unpaid"}])
-            save_data(pd.concat([df, new_record], ignore_index=True), TRANSACTION_FILE)
-            st.success("Transaction Secured in Ledger")
+    st.title("💊 NGO & Clinic Order Placement")
+    with st.form("order_form"):
+        med = st.text_input("Medication Name")
+        target = st.text_input("Destination (Clinic/Hospital)")
+        ngo = st.text_input("Responsible NGO")
+        qty = st.number_input("Quantity", min_value=1)
+        if st.form_submit_button("Initiate Order"):
+            st.success("Order logged. Awaiting Supplier verification.")
 
-# --- 12. INTERNAL: LOGISTICS TRACKING ---
-elif page == "🚚 Logistics Tracking":
-    st.title("🚚 Real-Time Supply Chain Tracking")
+# --- 12. MOVEMENT TRACKER (UPDATED LOGIC) ---
+elif page == "🚚 Movement Tracker":
+    st.title("🚚 Medication Movement Monitoring")
+    st.info("Note: Eco-Chain does not manage transport. We track the 'Digital Handshake' between Suppliers and Partners.")
     track_df = load_data(TRACKING_FILE, track_cols)
     
-    with st.expander("🆕 Dispatch New Shipment"):
-        with st.form("dispatch_form"):
-            m = st.text_input("Medication")
-            s = st.text_input("Supplier")
-            h = st.selectbox("Destination Hub", ["Helen Joseph", "Chris Hani Bara", "South Rand", "Sebokeng Hub"])
-            if st.form_submit_button("Initialize Tracking"):
-                new_s = pd.DataFrame([{"ID": f"TRK-{datetime.now().strftime('%M%S')}", "Medication": m, "Hospital": h, "Supplier": s, "Status": "📦 In Transit", "ETA": "3 Days", "Batch_No": "B-2026"}])
-                save_data(pd.concat([track_df, new_s], ignore_index=True), TRACKING_FILE)
+    with st.expander("📝 Record New Order for Tracking"):
+        with st.form("track_form"):
+            col1, col2 = st.columns(2)
+            m = col1.text_input("Medication")
+            s = col1.text_input("Supplier")
+            h = col2.text_input("Destination Clinic")
+            n = col2.text_input("NGO Partner (Transporter)")
+            if st.form_submit_button("Start Movement Visibility"):
+                new_t = pd.DataFrame([{"ID": f"MOV-{datetime.now().strftime('%M%S')}", "Medication": m, "Destination_Entity": h, "Supplier": s, "Movement_Status": "📦 Dispatched from Supplier", "NGO_Partner": n, "Batch_No": "B-VERIFIED"}])
+                save_data(pd.concat([track_df, new_t], ignore_index=True), TRACKING_FILE)
                 st.rerun()
 
     for idx, row in track_df.iterrows():
-        c1, c2, c3 = st.columns([1, 3, 1])
-        c1.code(row['ID'])
-        c2.write(f"**{row['Medication']}** (From: {row['Supplier']} to {row['Hospital']})")
-        if "Delivered" not in row['Status']:
-            if c3.button("Confirm Delivery", key=f"d_{idx}"):
-                track_df.at[idx, 'Status'] = "✅ Delivered"
-                save_data(track_df, TRACKING_FILE)
-                # Auto-record to Ledger
-                ldf = load_data(TRANSACTION_FILE, ledger_cols)
-                auto_entry = pd.DataFrame([{"Timestamp": datetime.now().strftime("%Y-%m-%d"), "Role": "System", "Hospital": row['Hospital'], "Type": "Stock Delivery", "Name": row['Medication'], "Qty": "Batch Verified", "Credit_Value": 0.0, "Status": "Unpaid"}])
-                save_data(pd.concat([ldf, auto_entry], ignore_index=True), TRANSACTION_FILE)
-                st.rerun()
-        else:
-            c3.success("Delivered")
+        with st.container():
+            c1, c2, c3 = st.columns([1, 3, 1])
+            c1.code(row['ID'])
+            c2.write(f"**{row['Medication']}** | Supplier: {row['Supplier']} ➔ Clinic: {row['Destination_Entity']}")
+            c2.caption(f"Partner Handling Transport: {row['NGO_Partner']}")
+            
+            if "Dispatched" in row['Movement_Status']:
+                if c3.button("Confirm Arrival", key=f"arv_{idx}"):
+                    track_df.at[idx, 'Movement_Status'] = "✅ Received at Clinic"
+                    save_data(track_df, TRACKING_FILE)
+                    # Add to Ledger
+                    ldf = load_data(TRANSACTION_FILE, ledger_cols)
+                    auto_ledger = pd.DataFrame([{"Timestamp": datetime.now().strftime("%Y-%m-%d"), "Role": "Logistics", "Entity": row['Destination_Entity'], "Type": "Verified Stock Arrival", "Name": row['Medication'], "Qty": "Batch Verified", "Credit_Value": 0.0, "Status": "Unpaid"}])
+                    save_data(pd.concat([ldf, auto_ledger], ignore_index=True), TRANSACTION_FILE)
+                    st.rerun()
+            else:
+                c3.success("Received")
         st.divider()
 
-# --- 13. INTERNAL: TRANSACTION RECORDS ---
+# --- 13. TRANSACTION RECORDS ---
 elif page == "📜 Transaction Records":
     st.title("📜 Permanent Credit Ledger")
     df = load_data(TRANSACTION_FILE, ledger_cols)
     st.dataframe(df, use_container_width=True)
-    if not df.empty:
-        st.download_button("📥 Export Audit Report", df.to_csv(index=False).encode('utf-8'), "audit.csv")
 
 # --- FOOTER ---
 st.sidebar.markdown("---")
