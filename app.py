@@ -118,13 +118,7 @@ if user_type == "Internal Executive/Technical Team":
 else:
     current_role = "Public Stakeholder"
 
-# --- 5. NAVIGATION (REPLACE START) ---
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "subscribed" not in st.session_state:
-    st.session_state.subscribed = False
-
-# Role Selection Logic for Sidebar
+# --- 5. UPDATED NAVIGATION ---
 if user_type == "Public Stakeholder":
     if not st.session_state.subscribed:
         nav_options = ["🏠 Dashboard", "📊 Subscription Portal", "📜 Smart Contract Governance"]
@@ -133,9 +127,90 @@ if user_type == "Public Stakeholder":
 else:
     nav_options = ["🏠 Dashboard", "📜 Smart Contract Governance", "📍 Regional Network", "📈 Clinic Health Insights"]
     if st.session_state.authenticated:
-        nav_options += ["💊 Medication Registry", "📜 Transaction Records"]
+        # Added '🚚 Logistics Tracking' to the internal menu
+        nav_options += ["💊 Medication Registry", "🚚 Logistics Tracking", "📜 Transaction Records"]
 
 page = st.sidebar.radio("Navigation", nav_options)
+
+# ... (Keep previous pages as they are) ...
+
+# --- NEW PAGE: LOGISTICS TRACKING ---
+elif page == "🚚 Logistics Tracking":
+    st.title("🚚 Real-Time Supply Chain Tracking")
+    
+    # Persistent file for tracking shipments
+    TRACKING_FILE = "shipment_tracker.csv"
+    track_cols = ["ID", "Medication", "Hospital", "Supplier", "Status", "ETA"]
+    
+    track_df = load_data(TRACKING_FILE, track_cols)
+    
+    # 1. Dispatch New Shipment (Form)
+    with st.expander("🆕 Dispatch New Shipment"):
+        with st.form("dispatch_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                m_name = st.text_input("Medication Name")
+                h_hub = st.selectbox("Destination Hub", ["Helen Joseph", "Chris Hani Bara", "South Rand", "Sebokeng"])
+            with col2:
+                supp = st.text_input("Supplier Name (e.g., Aspen)")
+                eta = st.date_input("Expected Delivery Date")
+            
+            if st.form_submit_button("Initialize Tracking"):
+                new_ship = pd.DataFrame([{
+                    "ID": f"TRK-{datetime.now().strftime('%M%S')}",
+                    "Medication": m_name,
+                    "Hospital": h_hub,
+                    "Supplier": supp,
+                    "Status": "📦 Dispatched",
+                    "ETA": str(eta)
+                }])
+                track_df = pd.concat([track_df, new_ship], ignore_index=True)
+                save_data(track_df, TRACKING_FILE)
+                st.success("Tracking ID Generated on Blockchain")
+
+    # 2. Tracking Dashboard
+    st.subheader("Active Shipments")
+    if not track_df.empty:
+        for idx, row in track_df.iterrows():
+            with st.container():
+                c1, c2, c3, c4 = st.columns([1, 2, 2, 1])
+                c1.code(row['ID'])
+                c2.write(f"**{row['Medication']}** → {row['Hospital']}")
+                
+                # Dynamic Status Color
+                status = row['Status']
+                if "Delivered" in status:
+                    c3.success(status)
+                elif "Transit" in status:
+                    c3.warning(status)
+                else:
+                    c3.info(status)
+                
+                # Update Action
+                if "✅ Delivered" not in status:
+                    if c4.button("Mark Delivered", key=f"ship_{idx}"):
+                        track_df.at[idx, 'Status'] = "✅ Delivered"
+                        save_data(track_df, TRACKING_FILE)
+                        
+                        # TRIGGER LEDGER ENTRY: Automate the financial record upon delivery
+                        ledger_df = load_data(TRANSACTION_FILE, ledger_cols)
+                        new_entry = pd.DataFrame([{
+                            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "Role": "System / Logistics",
+                            "Hospital": row['Hospital'],
+                            "Type": "Automated Logistics",
+                            "Name": row['Medication'],
+                            "Qty": "Checked at Gate",
+                            "Credit_Value": 0.0, # To be finalized by Finance
+                            "Status": "Unpaid"
+                        }])
+                        save_data(pd.concat([ledger_df, new_entry], ignore_index=True), TRANSACTION_FILE)
+                        st.rerun()
+                else:
+                    c4.write("🏁 Arrived")
+            st.divider()
+    else:
+        st.info("No active shipments found.")
 
 # --- 6. PAGE: SUBSCRIPTION PORTAL ---
 if page == "📊 Subscription Portal":
