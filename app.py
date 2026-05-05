@@ -126,14 +126,57 @@ elif page == "📜 Smart Contract Governance":
     st.info("Contract Address: `0x6f0Dc8Cc835181ddA24beE5b147d320D476874F2`")
     st.code("// logic: IF (stock <= threshold) THEN trigger_PurchaseOrder();", language="javascript")
 
-# --- 9. PAGE: REGIONAL NETWORK ---
+# --- 9. PAGE: REGIONAL NETWORK (RESTORED FULL HUB DATA) ---
 elif page == "📍 Regional Network":
     st.title("📍 Gauteng Regional Health Network")
-    c1, c2, c3 = st.columns(3)
-    with c1: st.markdown("<div class='region-card'><h4>Region A & B</h4><p><b>Central Hub:</b> Helen Joseph Hospital</p></div>", unsafe_allow_html=True)
-    with c2: st.markdown("<div class='region-card'><h4>Region C & D</h4><p><b>Central Hub:</b> Chris Hani Bara</p></div>", unsafe_allow_html=True)
-    with c3: st.markdown("<div class='region-card'><h4>Region G</h4><p><b>Central Hub:</b> Sebokeng Hub</p></div>", unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="insight-box">
+        <b>Network Infrastructure:</b> Eco-Chain operates across the seven primary health districts of Gauteng. 
+        Each region is anchored by a <b>Central Hospital Hub</b> which serves as the primary receiving 
+        point for pharmaceutical bulk deliveries before redistribution to local clinics.
+    </div>
+    """, unsafe_allow_html=True)
 
+    # Creating a grid for the 7 Regions
+    row1_col1, row1_col2, row1_col3 = st.columns(3)
+    row2_col1, row2_col2, row2_col3 = st.columns(3)
+    row3_col1, row3_col2, row3_col3 = st.columns(3)
+
+    with row1_col1:
+        st.markdown("""<div class='region-card'><h4>Region A & B</h4><hr>
+        <b>Central Hub:</b> Helen Joseph Hospital<br>
+        <b>Service Areas:</b> Diepsloot, Sandton, Rosebank, Northcliff</div>""", unsafe_allow_html=True)
+
+    with row1_col2:
+        st.markdown("""<div class='region-card'><h4>Region C</h4><hr>
+        <b>Central Hub:</b> Leratong Hospital<br>
+        <b>Service Areas:</b> Roodepoort, Doornkop, Bram Fischerville</div>""", unsafe_allow_html=True)
+
+    with row1_col3:
+        st.markdown("""<div class='region-card'><h4>Region D</h4><hr>
+        <b>Central Hub:</b> Chris Hani Baragwanath<br>
+        <b>Service Areas:</b> Soweto, Diepkloof, Meadowlands, Orlando</div>""", unsafe_allow_html=True)
+
+    with row2_col1:
+        st.markdown("""<div class='region-card'><h4>Region E</h4><hr>
+        <b>Central Hub:</b> Edenvale Hospital<br>
+        <b>Service Areas:</b> Alexandra, Wynberg, Orange Grove</div>""", unsafe_allow_html=True)
+
+    with row2_col2:
+        st.markdown("""<div class='region-card'><h4>Region F</h4><hr>
+        <b>Central Hub:</b> Charlotte Maxeke Academic<br>
+        <b>Service Areas:</b> Inner City, Johannesburg South, Turffontein</div>""", unsafe_allow_html=True)
+
+    with row2_col3:
+        st.markdown("""<div class='region-card'><h4>Region G</h4><hr>
+        <b>Central Hub:</b> Sebokeng Hospital Hub<br>
+        <b>Service Areas:</b> Ennerdale, Orange Farm, Lenasia</div>""", unsafe_allow_html=True)
+
+    with row3_col1:
+        st.markdown("""<div class='region-card'><h4>Outlying Districts</h4><hr>
+        <b>Central Hub:</b> Heidelberg/Tembisa<br>
+        <b>Service Areas:</b> Rural Clinics & Border Facilities</div>""", unsafe_allow_html=True)
 # --- 10. PAGE: CLINIC HEALTH INSIGHTS (RESTORED FULL DESCRIPTION) ---
 elif page == "📈 Clinic Health Insights":
     st.title("📈 Regional Health Insights & Forecasting")
