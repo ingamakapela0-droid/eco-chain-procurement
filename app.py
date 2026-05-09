@@ -13,24 +13,22 @@ try:
         MEDICATION_DATABASE, CATEGORY_MAPPING, ROLE_NAMES
     )
 except ImportError:
-    st.error("Missing config.py! Please ensure the file you just shared is in the same folder.")
+    st.error("Missing config.py! Please ensure config.py is in the same folder.")
     st.stop()
 
 # --- 2. BLOCKCHAIN CONNECTION ---
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 contract = w3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
 
-# --- 3. STYLING & THEME ---
+# --- 3. STYLING ---
 st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
 
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     .main { background-color: #F8FAFC; }
-    html, body, [class*="css"], .stMarkdown { font-family: 'Inter', sans-serif !important; }
     .mission-container { background-color: #F1F5F9; padding: 30px; border-radius: 15px; border-left: 8px solid #0D9488; margin-top: 20px; }
-    .mission-header { color: #0F172A; margin-bottom: 15px; font-weight: 700; font-size: 1.5rem; }
-    .mission-text { font-size: 1.1rem; line-height: 1.8; color: #1E293B; text-align: justify; }
+    .mission-header { color: #0F172A; font-weight: 700; font-size: 1.5rem; }
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; background-color: #0D9488; color: white; }
     </style>
     """, unsafe_allow_html=True)
@@ -46,7 +44,7 @@ if raw_wallet:
     wallet_address = Web3.to_checksum_address(raw_wallet)
     st.sidebar.success(f"Connected: {wallet_address[:6]}...{wallet_address[-4:]}")
     
-    # Check for CEO and Admin (Addresses you specified before)
+    # Static addresses for Admin and CEO
     CEO_ADDR = "0x35922c63dc498E133cDED15e459153f0EFE6F4D0"
     ADMIN_ADDR = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
 
@@ -56,7 +54,6 @@ if raw_wallet:
         current_role = "Admin"
     else:
         try:
-            # Look up role from your config's ROLE_NAMES
             role_id = contract.functions.registeredRoles(wallet_address).call()
             current_role = ROLE_NAMES.get(role_id, "Guest (Unverified)")
         except:
@@ -66,18 +63,19 @@ else:
     if st.sidebar.button("Connect MetaMask"):
         streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' });", key="connect")
 
-# --- 5. NAVIGATION ---
-nav_options = ["🏠 Dashboard", "📈 Health Insights"]
+# --- 5. NAVIGATION (FIXED NameError) ---
+# Define common pages
+nav_options = ["🏠 Dashboard", "📈 Health Insights", "📊 Request Access"]
 
+# Add role-specific pages
 if current_role == "Admin":
     nav_options.append("🛠️ Admin Approval Panel")
 elif current_role == "CEO":
     nav_options += ["💊 Register Medication", "📜 View Orders"]
 elif current_role == "Hospital":
     nav_options.append("💊 Issue Medication")
-elif current_role == "Guest (Unverified)":
-    nav_options.append("📊 Request Access")
 
+# This creates the 'page' variable globally - DO NOT INDENT THIS LINE
 page = st.sidebar.radio("Navigation", nav_options)
 
 # --- 6. PAGE: DASHBOARD ---
@@ -86,65 +84,74 @@ if page == "🏠 Dashboard":
     st.markdown("""
     <div class="mission-container">
         <h3 class="mission-header">Mission Statement</h3>
-        <p class="mission-text">
-            <b>Eco-Chain</b> bridges the gap between Gauteng healthcare facilities and pharmaceutical suppliers. 
-            By using the <b>Sepolia Blockchain</b>, we track stock levels in real-time and automate 
-            payments to prevent medication shortages in rural and urban clinics.
-        </p>
+        <p><b>Eco-Chain</b> bridges the gap between Gauteng healthcare facilities and pharmaceutical suppliers. 
+        Using <b>Blockchain</b>, we track stock and automate payments to prevent shortages.</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    c1, c2 = st.columns(2)
-    c1.metric("Network Status", "Sepolia Active")
-    c2.metric("Contract Verified", "Yes")
+    st.metric("Network Status", "Sepolia Active")
 
-# --- 7. PAGE: ADMIN APPROVAL ---
+# --- 7. PAGE: HEALTH INSIGHTS ---
+elif page == "📈 Health Insights":
+    st.title("📈 Regional Medication Data")
+    st.info("Live supply chain data from Gauteng Hubs will appear here.")
+
+# --- 8. PAGE: ADMIN APPROVAL PANEL ---
 elif page == "🛠️ Admin Approval Panel":
-    st.title("Admin Verification")
-    user_to_approve = st.text_input("Enter Wallet Address")
-    if st.button("Approve User"):
-        nonce = w3.eth.get_transaction_count(wallet_address)
-        tx = contract.functions.approveRegistration(Web3.to_checksum_address(user_to_approve)).build_transaction({
-            "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
-        })
-        tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"]})
-        streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-        st.success("Approval transaction sent to MetaMask.")
+    st.title("🛠️ Admin Verification Portal")
+    st.write("Approve registration requests for the blockchain network.")
+    
+    target_addr = st.text_input("Wallet Address to Approve")
+    
+    if st.button("✅ Verify & Approve User"):
+        if not wallet_address:
+            st.error("Connect Admin Wallet First")
+        elif not Web3.is_address(target_addr):
+            st.warning("Invalid Wallet Address")
+        else:
+            nonce = w3.eth.get_transaction_count(wallet_address)
+            tx = contract.functions.approveRegistration(Web3.to_checksum_address(target_addr)).build_transaction({
+                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
+            })
+            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
+            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+            st.success("Approval sent to blockchain.")
 
-# --- 8. PAGE: REQUEST ACCESS ---
+# --- 9. PAGE: REQUEST ACCESS ---
 elif page == "📊 Request Access":
-    st.title("Request System Access")
+    st.title("📊 Request System Access")
     role_choice = st.selectbox("Register as:", ["Hospital", "Supplier"])
     role_id = 1 if role_choice == "Hospital" else 2
+    
     if st.button("Submit Request"):
+        if not wallet_address:
+            st.error("Connect Wallet First")
+        else:
+            nonce = w3.eth.get_transaction_count(wallet_address)
+            tx = contract.functions.requestRegistration(role_id).build_transaction({
+                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
+            })
+            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
+            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+            st.info("Registration request submitted.")
+
+# --- 10. PAGE: REGISTER MEDICATION (CEO ONLY) ---
+elif page == "💊 Register Medication":
+    st.title("💊 Register New Medication")
+    cat = st.selectbox("Category", list(MEDICATION_DATABASE.keys()))
+    med_name = st.selectbox("Medication Name", list(MEDICATION_DATABASE[cat].keys()))
+    supplier = st.text_input("Supplier Address")
+    
+    if st.button("Record to Blockchain"):
         nonce = w3.eth.get_transaction_count(wallet_address)
-        tx = contract.functions.requestRegistration(role_id).build_transaction({
-            "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
+        cat_id = CATEGORY_MAPPING[cat]
+        tx = contract.functions.registerMedication(
+            med_name, cat_id, 100, 10, 50, 1000000, Web3.to_checksum_address(supplier)
+        ).build_transaction({
+            "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 300000, "gasPrice": w3.eth.gas_price
         })
         tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"]})
         streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-        st.info("Request sent. Please wait for Admin approval.")
-
-# --- 9. PAGE: REGISTER MEDICATION (CEO ONLY) ---
-elif page == "💊 Register Medication":
-    st.title("Register New Medication")
-    with st.form("reg_med"):
-        cat = st.selectbox("Category", list(MEDICATION_DATABASE.keys()))
-        med_name = st.selectbox("Medication Name", list(MEDICATION_DATABASE[cat].keys()))
-        price = st.number_input("Price (in Wei)", value=MEDICATION_DATABASE[cat][med_name])
-        supplier = st.text_input("Supplier Address")
-        if st.form_submit_button("Record to Blockchain"):
-            nonce = w3.eth.get_transaction_count(wallet_address)
-            # category_id from your CATEGORY_MAPPING
-            cat_id = CATEGORY_MAPPING[cat]
-            tx = contract.functions.registerMedication(
-                med_name, cat_id, 100, 10, 50, int(price), Web3.to_checksum_address(supplier)
-            ).build_transaction({
-                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 300000, "gasPrice": w3.eth.gas_price
-            })
-            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"]})
-            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
 
 # --- FOOTER ---
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Eco-Chain v10.0 | Sepolia")
+st.sidebar.caption("Eco-Chain v10.0 | Gauteng Health")
