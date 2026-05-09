@@ -151,7 +151,54 @@ elif page == "💊 Register Medication":
         })
         tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"]})
         streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+# --- 11. PAGE: ISSUE MEDICATION (HOSPITAL ONLY) ---
+elif page == "💊 Issue Medication":
+    st.title("💊 Issue Medication to Patient")
+    st.markdown("<div class='insight-box'>Use this page to record medication usage. When stock levels drop below the threshold, a blockchain order will be triggered automatically.</div>", unsafe_allow_html=True)
 
+    # In a real app, you'd fetch these from the blockchain inventory mapping.
+    # For your demo, we can use the names from your config to select what to issue.
+    all_meds = []
+    for cat in MEDICATION_DATABASE:
+        all_meds.extend(list(MEDICATION_DATABASE[cat].keys()))
+
+    with st.form("issue_form"):
+        selected_med = st.selectbox("Select Medication to Issue", all_meds)
+        # In a full version, you would call contract.functions.checkStock(selected_med).call() 
+        # to show the user how much is left before they issue.
+        
+        patient_id = st.text_input("Patient ID / Case Number (Optional)")
+        
+        if st.form_submit_button("Confirm Issuance"):
+            if not wallet_address:
+                st.error("Please connect your Hospital wallet.")
+            else:
+                try:
+                    nonce = w3.eth.get_transaction_count(wallet_address)
+                    
+                    # Call the 'issueMedication' function from your smart contract
+                    tx = contract.functions.issueMedication(selected_med).build_transaction({
+                        "from": wallet_address,
+                        "nonce": nonce,
+                        "chainId": 11155111,
+                        "gas": 200000,
+                        "gasPrice": w3.eth.gas_price
+                    })
+
+                    tx_json = json.dumps({
+                        "from": tx["from"],
+                        "to": tx["to"],
+                        "data": tx["data"],
+                        "gas": hex(tx["gas"])
+                    })
+
+                    streamlit_js_eval(
+                        js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});", 
+                        key="issue_tx"
+                    )
+                    st.success(f"Successfully recorded issuance of {selected_med} on the blockchain.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 # --- FOOTER ---
 st.sidebar.markdown("---")
 st.sidebar.caption("Eco-Chain v10.0 | Gauteng Health")
