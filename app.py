@@ -137,108 +137,106 @@ elif page == "📊 Request Access":
 # --- 10. PAGE: REGISTER MEDICATION (CEO ONLY) ---
 elif page == "💊 Register Medication":
     st.title("💊 Register New Medication")
-    cat = st.selectbox("Category", list(MEDICATION_DATABASE.keys()))
-    med_name = st.selectbox("Medication Name", list(MEDICATION_DATABASE[cat].keys()))
-    supplier = st.text_input("Supplier Address")
+    st.write("CEO Portal: Link a new drug to a supplier and set automated reorder levels.")
     
-    if st.button("Record to Blockchain"):
-        nonce = w3.eth.get_transaction_count(wallet_address)
-        cat_id = CATEGORY_MAPPING[cat]
-        tx = contract.functions.registerMedication(
-            med_name, cat_id, 100, 10, 50, 1000000, Web3.to_checksum_address(supplier)
-        ).build_transaction({
-            "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 300000, "gasPrice": w3.eth.gas_price
-        })
-        tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"]})
-        streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+    with st.form("reg_form"):
+        cat = st.selectbox("Category", list(MEDICATION_DATABASE.keys()))
+        med_name = st.selectbox("Medication Name", list(MEDICATION_DATABASE[cat].keys()))
+        supplier_addr = st.text_input("Supplier Wallet Address (0x...)", placeholder="Paste Supplier Wallet Here")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1: initial_stock = st.number_input("Initial Stock", min_value=1, value=100)
+        with col2: threshold = st.number_input("Reorder Threshold", min_value=1, value=10)
+        with col3: price = st.number_input("Unit Price (Wei)", min_value=1, value=1000)
+
+        if st.form_submit_button("🚀 Register on Blockchain"):
+            if not wallet_address:
+                st.error("Please connect CEO wallet.")
+            elif not Web3.is_address(supplier_addr):
+                st.warning("Invalid Supplier Address.")
+            else:
+                try:
+                    nonce = w3.eth.get_transaction_count(wallet_address)
+                    cat_id = CATEGORY_MAPPING[cat]
+                    
+                    # Call smart contract
+                    tx = contract.functions.registerMedication(
+                        med_name, cat_id, initial_stock, threshold, initial_stock, price, Web3.to_checksum_address(supplier_addr)
+                    ).build_transaction({
+                        "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 300000, "gasPrice": w3.eth.gas_price
+                    })
+
+                    tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
+                    streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+                    st.success(f"Registration for {med_name} initiated!")
+                except Exception as e:
+                    st.error(f"Blockchain Error: {e}")
+
 # --- 11. PAGE: ISSUE MEDICATION (HOSPITAL ONLY) ---
 elif page == "💊 Issue Medication":
     st.title("💊 Issue Medication to Patient")
-    st.markdown("<div class='insight-box'>Use this page to record medication usage. When stock levels drop below the threshold, a blockchain order will be triggered automatically.</div>", unsafe_allow_html=True)
+    st.write("Hospital Portal: Record usage. Automated orders trigger when stock < threshold.")
 
-    # In a real app, you'd fetch these from the blockchain inventory mapping.
-    # For your demo, we can use the names from your config to select what to issue.
     all_meds = []
     for cat in MEDICATION_DATABASE:
         all_meds.extend(list(MEDICATION_DATABASE[cat].keys()))
 
-    with st.form("issue_form"):
-        selected_med = st.selectbox("Select Medication to Issue", all_meds)
-        # In a full version, you would call contract.functions.checkStock(selected_med).call() 
-        # to show the user how much is left before they issue.
-        
-        patient_id = st.text_input("Patient ID / Case Number (Optional)")
-        
-        if st.form_submit_button("Confirm Issuance"):
-            if not wallet_address:
-                st.error("Please connect your Hospital wallet.")
-            else:
-                try:
-                    nonce = w3.eth.get_transaction_count(wallet_address)
-                    
-                    # Call the 'issueMedication' function from your smart contract
-                    tx = contract.functions.issueMedication(selected_med).build_transaction({
-                        "from": wallet_address,
-                        "nonce": nonce,
-                        "chainId": 11155111,
-                        "gas": 200000,
-                        "gasPrice": w3.eth.gas_price
-                    })
+    selected_med = st.selectbox("Select Medication", all_meds)
+    
+    if st.button("Confirm Issuance"):
+        try:
+            nonce = w3.eth.get_transaction_count(wallet_address)
+            tx = contract.functions.issueMedication(selected_med).build_transaction({
+                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
+            })
+            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
+            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+            st.info("Issuance transaction sent to MetaMask.")
+        except Exception as e:
+            st.error(f"Error: {e}")
 
-                    tx_json = json.dumps({
-                        "from": tx["from"],
-                        "to": tx["to"],
-                        "data": tx["data"],
-                        "gas": hex(tx["gas"])
-                    })
-
-                    streamlit_js_eval(
-                        js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});", 
-                        key="issue_tx"
-                    )
-                    st.success(f"Successfully recorded issuance of {selected_med} on the blockchain.")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-# --- 12. PAGE: VIEW ORDERS (CEO & SUPPLIER) ---
+# --- 12. PAGE: VIEW ORDERS (CEO & ADMIN) ---
 elif page == "📜 View Orders":
     st.title("📜 Procurement Order Ledger")
-    st.write("This ledger shows orders automatically generated by low stock levels.")
-
     try:
-        # 1. Get total number of orders from the blockchain
         count = contract.functions.orderCount().call()
-        
         if count == 0:
-            st.info("No orders have been generated yet. (Stock levels are still healthy!)")
+            st.info("No orders found.")
         else:
             orders_data = []
-            # 2. Loop through and fetch each order by ID
             for i in range(1, count + 1):
                 order = contract.functions.orders(i).call()
-                # order structure: (id, medName, quantity, totalCost, supplier, status)
                 orders_data.append({
-                    "Order ID": order[0],
-                    "Medication": order[1],
-                    "Quantity": order[2],
-                    "Total Cost (Wei)": order[3],
-                    "Supplier": order[4],
-                    "Status": "Created" if order[5] == 0 else "Paid/Completed"
+                    "ID": order[0], "Medication": order[1], "Qty": order[2], 
+                    "Supplier": order[4], "Status": "Created" if order[5] == 0 else "Completed"
                 })
-            
-            # 3. Display as a nice table
-            df = pd.DataFrame(orders_data)
-            st.table(df)
-
-            # 4. Optional: Payment trigger for the CEO/Financial Officer
-            if current_role in ["CEO", "Admin"]:
-                st.subheader("Process Payment")
-                order_to_pay = st.number_input("Enter Order ID to Settle", min_value=1, max_value=count)
-                if st.button("Settle Order via Blockchain"):
-                    # Logic to call payAndReplenish would go here
-                    st.warning("Ensure you have enough Sepolia ETH to settle this order.")
-                    
+            st.table(pd.DataFrame(orders_data))
     except Exception as e:
-        st.error(f"Could not fetch orders: {e}")                    
+        st.error(f"Fetch Error: {e}")
+
+# --- 13. PAGE: SUPPLIER HUB ---
+elif page == "📦 Supplier Hub":
+    st.title("📦 Supplier Fulfillment Portal")
+    if not wallet_address:
+        st.warning("Connect Supplier Wallet.")
+    else:
+        try:
+            count = contract.functions.orderCount().call()
+            my_orders = []
+            for i in range(1, count + 1):
+                order = contract.functions.orders(i).call()
+                if order[4].lower() == wallet_address.lower():
+                    my_orders.append({
+                        "ID": order[0], "Medication": order[1], "Qty": order[2], 
+                        "Status": "📦 Pending" if order[5] == 0 else "✅ Done"
+                    })
+            if my_orders:
+                st.table(pd.DataFrame(my_orders))
+            else:
+                st.info("No orders assigned to this wallet.")
+        except Exception as e:
+            st.error(f"Error: {e}")
+
 # --- FOOTER ---
 st.sidebar.markdown("---")
-st.sidebar.caption("Eco-Chain v10.0 | Gauteng Health")
+st.sidebar.caption(f"Eco-Chain | Connected: {current_role}")
