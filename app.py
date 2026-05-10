@@ -20,37 +20,40 @@ except ImportError:
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 contract = w3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
 
-# --- 3. STYLING ---
+# --- 3. STYLING & LOGO ---
 st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
 
-# This tells Streamlit to look for the file named 'logo.png' in your GitHub folder
-LOGO_FILE = "logo.png" 
+# Replace this with your GitHub Raw URL when ready
+LOGO_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/logo.png"
 
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     .main { background-color: #F8FAFC; }
     .hero-section {
         background: linear-gradient(90deg, #0D9488 0%, #0F766E 100%);
-        padding: 40px; border-radius: 20px; color: white; text-align: center; margin-bottom: 30px;
+        padding: 40px;
+        border-radius: 20px;
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
     .mission-container { 
-        background-color: white; padding: 30px; border-radius: 15px; 
-        border-left: 8px solid #0D9488; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        background-color: white; 
+        padding: 30px; 
+        border-radius: 15px; 
+        border-left: 8px solid #0D9488; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+    .mission-header { color: #0F172A; font-weight: 700; font-size: 1.6rem; margin-top: 0; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; background-color: #0D9488; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 4. WALLET & ROLE DETECTION ---
-# Removed the flower icon and replaced with the logo at the top of the sidebar
-try:
-    st.sidebar.image("logo.png", use_container_width=True)
-except Exception:
-    st.sidebar.title("Eco-Chain") # Fallback text if logo file is missing
-
-raw_wallet = streamlit_js_eval(
-    js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", 
-    key="wallet"
-)
+st.sidebar.title("🌿 Eco-Chain")
+raw_wallet = streamlit_js_eval(js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", key="wallet")
 
 current_role = "Public Stakeholder"
 wallet_address = None
@@ -59,7 +62,6 @@ if raw_wallet:
     wallet_address = Web3.to_checksum_address(raw_wallet)
     st.sidebar.success(f"Connected: {wallet_address[:6]}...{wallet_address[-4:]}")
     
-    # Static addresses for Admin and CEO
     CEO_ADDR = "0x35922c63dc498E133cDED15e459153f0EFE6F4D0"
     ADMIN_ADDR = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
 
@@ -73,7 +75,6 @@ if raw_wallet:
             current_role = ROLE_NAMES.get(role_id, "Guest (Unverified)")
         except:
             current_role = "Guest (Unverified)"
-    
     st.sidebar.info(f"Verified Role: **{current_role}**")
 else:
     if st.sidebar.button("Connect MetaMask"):
@@ -99,11 +100,11 @@ if page == "🏠 Dashboard":
     col1, col2 = st.columns([1, 4])
     
     with col1:
-        # Streamlit detects 'logo.png' if it's in your root GitHub folder
+        # This handles the logo safely without crashing
         try:
-            st.image("logo.png", width=150)
-        except Exception:
-            # This shows a professional icon if your file isn't uploaded yet
+            st.image(LOGO_URL, width=150)
+        except:
+            # Safe backup if the URL isn't working
             st.image("https://cdn-icons-png.flaticon.com/512/3063/3063822.png", width=150)
     
     with col2:
@@ -116,12 +117,12 @@ if page == "🏠 Dashboard":
 
     st.markdown("---")
 
-    # The High-Impact Mission Statement (Attractive & Professional)
+    # The High-Impact Mission Statement
     st.markdown("""
     <div class="hero-section">
         <h2 style="color: white; margin-top: 0;">Eliminating Stockouts. Saving Lives.</h2>
         <p style="font-size: 1.15rem; line-height: 1.6;">
-            Eco-Chain is a next-generation procurement platform designed to solve the abrupt shortage of 
+            Eco-Chain is an autonomous procurement platform designed to solve the abrupt shortage of 
             critical medication in South African hospitals. By acting as a <b>real-time bridge</b> between 
             dispensaries and pharmaceutical suppliers, we ensure life-saving care is always available.
         </p>
@@ -129,30 +130,95 @@ if page == "🏠 Dashboard":
     
     <div class="mission-container">
         <h3 class="mission-header">Strategic Operational Model</h3>
-        <p style="font-size: 1.1rem; color: #334155; line-height: 1.6;">
+        <p style="font-size: 1.1rem; color: #334155;">
             Our application monitors real-time medication stock levels at regional dispensaries. When usage 
-            reaches a critical <b>Minimum Threshold</b>, the blockchain automatically notifies pharmaceutical suppliers 
-            through <b>Smart Contract Governance</b>. This eliminates manual delays, prevents stockouts, and ensures 
-            that medication is delivered to clinics before the shelves run empty.
+            reaches a critical <b>Minimum Threshold</b>, the blockchain automatically notifies pharmaceutical suppliers. 
+            This eliminates manual delays, prevents stockouts, and ensures that medication is delivered 
+            to clinics before the shelves run empty.
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Key Network Metrics for the Presentation
+    # Key Network Metrics
     st.markdown("### Regional Network Status")
     m1, m2, m3 = st.columns(3)
-    
-    # These metrics give the lecturer a sense of a "live" project
     m1.metric("Network", "Sepolia Testnet", "Active")
     m2.metric("Contract Security", "Blockchain Verified", "100%")
     m3.metric("Gauteng Hubs", "Regional Connectivity", "Live")
-
-    # Footer/Status Indicator
-    st.success(f"Successfully connected to Gauteng Regional Ledger. Current Access: {current_role}")
-# --- 7. PAGE: HEALTH INSIGHTS ---
+# --- PAGE: HEALTH INSIGHTS ---
 elif page == "📈 Health Insights":
-    st.title("📈 Regional Medication Data")
-    st.info("Live supply chain data from Gauteng Hubs will appear here.")
+    st.title("📊 Regional Health Data Analytics")
+    st.markdown("### City of Johannesburg HIV & TB Epidemic Trends")
+    
+    st.info("""
+        **Strategic Context:** This data justifies the existence of Eco-Chain. High patient volumes 
+        and the current 21% ART shortfall require an automated, blockchain-verified supply chain 
+        to ensure zero medication stockouts.
+    """)
+
+    # --- TABBED VIEW FOR DATA ---
+    tab1, tab2, tab3 = st.tabs(["🔴 HIV Statistics", "🔵 TB Statistics", "📍 Regional Coverage"])
+
+    with tab1:
+        st.subheader("HIV Positive Test Results (April 2019 - March 2020)")
+        
+        # Data transcribed from Table 6
+        hiv_data = {
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G", "City Total"],
+            "HIV Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062, 1846503],
+            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773, 114397],
+            "Positivity Rate (%)": [5.9, 4.9, 7.1, 5.8, 5.2, 7.8, 6.2, 6.2]
+        }
+        st.table(hiv_data)
+
+        st.subheader("ART Adherence & Gap Analysis (YTD 2019/20)")
+        # Data transcribed from Table 7
+        art_data = {
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Target Population": [72898, 29347, 41906, 146046, 44658, 107182, 74479],
+            "Actual on ART": [58829, 22271, 34993, 115098, 37839, 83650, 56560],
+            "Gap (Missing Treatment)": [14069, 7076, 6913, 30948, 6819, 23532, 17919],
+            "Progress (%)": [80.7, 75.9, 83.5, 78.8, 84.7, 78.0, 75.9]
+        }
+        st.bar_chart(data=art_data, x="Region", y="Actual on ART")
+        st.write("**Note:** Region D shows the highest gap (30,948 patients), indicating a critical need for supply chain optimization in that area.")
+        st.table(art_data)
+
+    with tab2:
+        st.subheader("Drug Sensitive TB Treatment Outcomes")
+        # Data transcribed from Table 4
+        tb_data = {
+            "Organisation/Unit": ["City of Joburg", "Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Treatment Success (%)": [83.4, 89.4, 90.3, 87.5, 80.5, 87.0, 80.7, 81.5],
+            "Death Rate (%)": [6.1, 5.3, 3.7, 4.3, 7.8, 4.0, 7.1, 7.1],
+            "Lost to Follow-up (%)": [9.1, 4.8, 5.5, 8.2, 10.9, 6.7, 9.6, 11.0]
+        }
+        st.write("Target Death Rate: < 5% | Target Lost to Follow-up: < 5.5%")
+        st.dataframe(tb_data, use_container_width=True)
+
+    with tab3:
+        st.subheader("City of Johannesburg Health Facility Mapping")
+        
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            st.markdown("""
+            **Primary Hubs per Region:**
+            - **Region A:** Diepsloot, Midrand, Lanseria
+            - **Region B:** Randburg, Rosebank, Parktown
+            - **Region C:** Roodepoort, Florida, Bram Fischerville
+            - **Region D:** Soweto, Doornkop, Protea Glen
+            """)
+        with col_m2:
+            st.markdown("""
+            - **Region E:** Alexandra, Sandton, Houghton
+            - **Region F:** Inner City, Johannesburg South
+            - **Region G:** Orange Farm, Ennerdale, Lenasia
+            """)
+            
+        st.info("💡 Eco-Chain nodes are strategically placed across these 7 regions to ensure equitable medication distribution.")
+
+    st.markdown("---")
+    st.warning("⚠️ **System Insight:** 6.1% average TB death rate and high loss-to-follow-up rates are often exacerbated by medication shortages. Eco-Chain's Smart Contracts automate fulfillment before stock reaches zero.")
 
 # --- 8. PAGE: ADMIN APPROVAL PANEL ---
 elif page == "🛠️ Admin Approval Panel":
