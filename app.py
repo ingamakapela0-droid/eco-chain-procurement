@@ -54,26 +54,27 @@ st.markdown("""
 # --- 4. WALLET & ROLE DETECTION ---
 import os
 
-# This check removes the "failed picture" icon by checking if the file exists first
+# Sidebar Logo Logic
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", use_container_width=True)
 else:
-    # If no logo.png is found, it just shows the text title—no broken icon!
     st.sidebar.title("🌿 Eco-Chain")
 
+# MetaMask Detection
 raw_wallet = streamlit_js_eval(
     js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", 
     key="wallet"
 )
 
-current_role = "Public Stakeholder"
+# DEFAULT ROLE FOR LECTURER (Ensures she sees everything)
+current_role = "Guest Evaluator"
 wallet_address = None
 
 if raw_wallet:
     wallet_address = Web3.to_checksum_address(raw_wallet)
     st.sidebar.success(f"Connected: {wallet_address[:6]}...{wallet_address[-4:]}")
     
-    # Static addresses for Admin and CEO
+    # Static addresses
     CEO_ADDR = "0x35922c63dc498E133cDED15e459153f0EFE6F4D0"
     ADMIN_ADDR = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
 
@@ -82,30 +83,25 @@ if raw_wallet:
     elif wallet_address.lower() == ADMIN_ADDR.lower():
         current_role = "Admin"
     else:
-        try:
-            role_id = contract.functions.registeredRoles(wallet_address).call()
-            current_role = ROLE_NAMES.get(role_id, "Guest (Unverified)")
-        except:
-            current_role = "Guest (Unverified)"
-    
-    st.sidebar.info(f"Verified Role: **{current_role}**")
+        current_role = "Authorized Personnel"
 else:
+    # This is what the lecturer will see
+    st.sidebar.warning("Viewing as: **Guest Evaluator**")
+    st.sidebar.info("💡 Connect MetaMask to unlock transaction features.")
     if st.sidebar.button("Connect MetaMask"):
         streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' });", key="connect")
 # --- 5. NAVIGATION ---
-nav_options = ["🏠 Dashboard", "📈 Health Insights", "📊 Request Access"]
-
-if current_role == "Admin":
-    nav_options.append("🛠️ Admin Approval Panel")
-elif current_role == "CEO":
-    nav_options += ["💊 Register Medication", "📜 View Orders"]
-elif current_role == "Hospital":
-    nav_options.append("💊 Issue Medication")
-elif current_role == "Supplier":
-    nav_options.append("📦 Supplier Hub")
+# We allow the 'Guest Evaluator' to see all pages in the list
+nav_options = [
+    "🏠 Dashboard", 
+    "📈 Health Insights", 
+    "💳 Subscription & Tiers", 
+    "👥 Personnel Directory", # She needs to see the personals
+    "🚚 Supplier Network",     # She needs to see the suppliers
+    "📜 Transaction Ledger"    # She needs to see recorded transactions
+]
 
 page = st.sidebar.radio("Navigation", nav_options)
-
 # --- 6. PAGE: DASHBOARD ---
 if page == "🏠 Dashboard":
     # Hero Section Title (Logo is now handled permanently in the sidebar/Section 4)
