@@ -108,24 +108,13 @@ page = st.sidebar.radio("Navigation", nav_options)
 
 # --- 6. PAGE: DASHBOARD ---
 if page == "🏠 Dashboard":
-    # Hero Section with Logo and Title
-    col1, col2 = st.columns([1, 4])
-    
-    with col1:
-        # This handles the logo safely without crashing
-        try:
-            st.image(LOGO_URL, width=150)
-        except:
-            # Safe backup if the URL isn't working
-            st.image("https://cdn-icons-png.flaticon.com/512/3063/3063822.png", width=150)
-    
-    with col2:
-        st.markdown(f"""
-            <div style="padding-top: 10px;">
-                <h1 style='color: #0D9488; margin-bottom: 0;'>Eco-Chain Procurement Solutions</h1>
-                <p style='font-size: 1.2rem; color: #64748B;'><i>The Digital Bridge for Gauteng's Healthcare Supply Chain</i></p>
-            </div>
-        """, unsafe_allow_html=True)
+    # Hero Section Title (Logo is now handled permanently in the sidebar/Section 4)
+    st.markdown(f"""
+        <div style="padding-top: 10px;">
+            <h1 style='color: #0D9488; margin-bottom: 0;'>Eco-Chain Procurement Solutions</h1>
+            <p style='font-size: 1.2rem; color: #64748B;'><i>The Digital Bridge for Gauteng's Healthcare Supply Chain</i></p>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -134,7 +123,7 @@ if page == "🏠 Dashboard":
     <div class="hero-section">
         <h2 style="color: white; margin-top: 0;">Eliminating Stockouts. Saving Lives.</h2>
         <p style="font-size: 1.15rem; line-height: 1.6;">
-            Eco-Chain is an autonomous procurement platform designed to solve the abrupt shortage of 
+            Eco-Chain is a next-generation procurement platform designed to solve the abrupt shortage of 
             critical medication in South African hospitals. By acting as a <b>real-time bridge</b> between 
             dispensaries and pharmaceutical suppliers, we ensure life-saving care is always available.
         </p>
@@ -142,11 +131,11 @@ if page == "🏠 Dashboard":
     
     <div class="mission-container">
         <h3 class="mission-header">Strategic Operational Model</h3>
-        <p style="font-size: 1.1rem; color: #334155;">
+        <p style="font-size: 1.1rem; color: #334155; line-height: 1.6;">
             Our application monitors real-time medication stock levels at regional dispensaries. When usage 
-            reaches a critical <b>Minimum Threshold</b>, the blockchain automatically notifies pharmaceutical suppliers. 
-            This eliminates manual delays, prevents stockouts, and ensures that medication is delivered 
-            to clinics before the shelves run empty.
+            reaches a critical <b>Minimum Threshold</b>, the blockchain automatically notifies pharmaceutical suppliers 
+            through <b>Smart Contract Governance</b>. This eliminates manual delays, prevents stockouts, and ensures 
+            that medication is delivered to clinics before the shelves run empty.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -154,9 +143,13 @@ if page == "🏠 Dashboard":
     # Key Network Metrics
     st.markdown("### Regional Network Status")
     m1, m2, m3 = st.columns(3)
+    
     m1.metric("Network", "Sepolia Testnet", "Active")
     m2.metric("Contract Security", "Blockchain Verified", "100%")
     m3.metric("Gauteng Hubs", "Regional Connectivity", "Live")
+
+    # Footer Status
+    st.success(f"Successfully connected to Gauteng Regional Ledger. Current Access: {current_role}")
 # --- PAGE: HEALTH INSIGHTS ---
 elif page == "📈 Health Insights":
     st.title("📊 Regional Health Data Analytics")
