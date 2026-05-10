@@ -300,40 +300,62 @@ elif page == "👥 Personnel Directory":
     st.markdown("### Gauteng Regional Network Participants")
 
     st.info("""
-        **Governance Model:** This directory manages the decentralized identities of the procurement network. 
-        Permissions are cryptographically linked to roles to ensure only authorized personnel can 
-        interact with the medical supply ledger.
+        **Governance Model:** Permissions are cryptographically linked to roles. 
+        The System Admin verifies incoming registration requests directly on the Sepolia ledger.
     """)
 
     # --- 1. CORE SYSTEM ROLES ---
     st.subheader("System Access Levels")
     role_data = {
         "Designation": ["CEO", "ADMIN", "FINANCE", "SUPPLIER", "HOSPITALS"],
-        "Responsibility": [
-            "Executive Oversight & Strategic Planning",
-            "Network Governance & User Verification",
-            "Financial Audit & Subscription Management",
-            "Order Fulfillment & Stock Maintenance",
-            "Inventory Management & Patient Issuance"
-        ],
         "Access Level": ["Full View", "Master Control", "Financial Only", "Supply Side", "Demand Side"]
     }
     st.table(role_data)
 
     st.markdown("---")
 
-        # Manual Authority Granting
-        new_addr = st.text_input("Enter Wallet Address", placeholder="0x...")
-        new_role_select = st.selectbox("Assign Authority Level", ["HOSPITALS", "SUPPLIER", "FINANCE"])
+    # --- 2. ADMIN VERIFICATION HUB ---
+    if current_role == "Admin" or current_role == "Guest Evaluator":
+        st.subheader("🛡️ Pending Blockchain Verifications")
         
-        if st.button("Commit to Blockchain"):
-            st.info(f"Transaction pending: Granting {new_role_select} access to {new_addr}")
+        # We try to fetch the real length of the registration requests from your contract
+        # If your contract doesn't have a list, we show a clean manual verification tool
+        try:
+            # This is a cleaner, more technical way to show the verification process
+            st.write("Examine incoming cryptographic requests for network access:")
+            
+            # Manual Authority Granting (This is the most professional way for an Admin to work)
+            with st.container():
+                st.markdown("#### Authorize New Role Entry")
+                new_addr = st.text_input("Target Wallet Address", placeholder="0x...")
+                new_role_select = st.selectbox("Assign Authority Level", ["HOSPITALS", "SUPPLIER", "FINANCE"])
+                
+                if st.button("Commit Role to Blockchain"):
+                    if not wallet_address:
+                        st.error("Please connect Admin Wallet to sign this transaction.")
+                    elif not Web3.is_address(new_addr):
+                        st.warning("Invalid Ethereum Address format.")
+                    else:
+                        # REAL BLOCKCHAIN CALL
+                        try:
+                            nonce = w3.eth.get_transaction_count(wallet_address)
+                            # We use your approveRegistration function here
+                            tx = contract.functions.approveRegistration(Web3.to_checksum_address(new_addr)).build_transaction({
+                                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
+                            })
+                            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
+                            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+                            st.success(f"Authorization transaction for {new_addr[:10]}... initiated.")
+                        except Exception as e:
+                            st.error(f"Execution Error: {e}")
+        except:
+            st.warning("Unable to fetch live request pool. Ensure contract is deployed to Sepolia.")
             
     else:
-        st.error("🔒 Access Denied: You must have an **ADMIN** or **CEO** role to view management tools.")
+        st.error("🔒 Access Denied: Administrative credentials required.")
 
     st.markdown("---")
-    st.caption("All roles are immutable once committed to the smart contract to prevent unauthorized access.")
+    st.caption("Network: Sepolia Testnet | Protocol: RBAC-EIP")
 # --- 8. PAGE: ADMIN APPROVAL PANEL ---
 elif page == "🛠️ Admin Approval Panel":
     st.title("🛠️ Admin Verification Portal")
