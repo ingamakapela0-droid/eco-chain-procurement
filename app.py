@@ -52,12 +52,14 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 4. WALLET & ROLE DETECTION ---
-# PLACE LOGO HERE TO MAKE IT PERMANENT ON ALL PAGES
-try:
-    # This places the logo at the top of the sidebar permanently
+import os
+
+# This check removes the "failed picture" icon by checking if the file exists first
+if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", use_container_width=True)
-except Exception:
-    st.sidebar.title("Eco-Chain")
+else:
+    # If no logo.png is found, it just shows the text title—no broken icon!
+    st.sidebar.title("🌿 Eco-Chain")
 
 raw_wallet = streamlit_js_eval(
     js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", 
