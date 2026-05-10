@@ -540,19 +540,40 @@ elif page == "🛒 Hospital Orders":
     else:
         st.error("Access Denied: This portal is restricted to Hospital/Clinic Personnel.")
 
-# --- PAGE: SUPPLIER NETWORK (SUPPLIER VIEW) ---
-elif page == "🚚 Supplier Network":
-    st.title("🚚 Supplier Fulfillment Hub")
+# --- PAGE: SUPPLIER HUB ---
+elif page == "📦 Supplier Hub":
+    st.title("📦 Supplier Fulfillment Portal")
     
-    if current_role in ["Supplier", "Guest Evaluator"]:
-        st.subheader("Open Procurement Requests")
-        # Live data table for the lecturer to see
-        st.table(pending_orders)
-        
-        if st.button("Fulfill & Ship Priority Order"):
-            st.success("Shipment status updated. Smart contract payment pending delivery confirmation.")
+    if current_role != "Supplier" and current_role != "Guest Evaluator":
+        st.error("Access Restricted to Verified Suppliers.")
     else:
-        st.error("Access Denied: Supplier credentials required.")
+        st.subheader("Incoming Medication Requests")
+        try:
+            count = contract.functions.orderCount().call()
+            if count == 0:
+                st.info("No pending orders from Gauteng hospitals at this time.")
+            else:
+                for i in range(1, count + 1):
+                    order = contract.functions.orders(i).call()
+                    # Only show orders assigned to this supplier or 'Created' orders
+                    if order[4].lower() == wallet_address.lower() or order[5] == 0:
+                        with st.expander(f"Order #{order[0]}: {order[1]}"):
+                            st.write(f"**Quantity Required:** {order[2]}")
+                            st.write(f"**Hospital Address:** {order[3]}")
+                            
+                            if order[5] == 0: # 0 = Created/Pending
+                                if st.button(f"Fulfill Order #{order[0]}", key=f"f_{i}"):
+                                    nonce = w3.eth.get_transaction_count(wallet_address)
+                                    # Assuming your contract has a fulfillOrder function
+                                    tx = contract.functions.fulfillOrder(i).build_transaction({
+                                        "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000
+                                    })
+                                    tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
+                                    streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
+                            else:
+                                st.success("✅ Order Fulfilled")
+        except Exception as e:
+            st.error(f"Blockchain Fetch Error: {e}")
 # --- FOOTER ---
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Eco-Chain | Connected: {current_role}")
