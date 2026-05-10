@@ -41,8 +41,16 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 4. WALLET & ROLE DETECTION ---
-st.sidebar.title("🌿 Eco-Chain")
-raw_wallet = streamlit_js_eval(js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", key="wallet")
+# Removed the flower icon and replaced with the logo at the top of the sidebar
+try:
+    st.sidebar.image("logo.png", use_container_width=True)
+except Exception:
+    st.sidebar.title("Eco-Chain") # Fallback text if logo file is missing
+
+raw_wallet = streamlit_js_eval(
+    js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", 
+    key="wallet"
+)
 
 current_role = "Public Stakeholder"
 wallet_address = None
@@ -51,6 +59,7 @@ if raw_wallet:
     wallet_address = Web3.to_checksum_address(raw_wallet)
     st.sidebar.success(f"Connected: {wallet_address[:6]}...{wallet_address[-4:]}")
     
+    # Static addresses for Admin and CEO
     CEO_ADDR = "0x35922c63dc498E133cDED15e459153f0EFE6F4D0"
     ADMIN_ADDR = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
 
@@ -64,6 +73,7 @@ if raw_wallet:
             current_role = ROLE_NAMES.get(role_id, "Guest (Unverified)")
         except:
             current_role = "Guest (Unverified)"
+    
     st.sidebar.info(f"Verified Role: **{current_role}**")
 else:
     if st.sidebar.button("Connect MetaMask"):
