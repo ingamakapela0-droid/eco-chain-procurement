@@ -322,36 +322,6 @@ elif page == "👥 Personnel Directory":
 
     st.markdown("---")
 
-    # --- 2. ADMIN VERIFICATION PANEL ---
-    if current_role == "Admin" or current_role == "Guest Evaluator":
-        st.subheader("🛡️ Admin Verification Hub")
-        
-        if current_role == "Guest Evaluator":
-            st.warning("🔭 **Evaluator View:** Showing the verification interface for regional facilities.")
-
-        st.write("**Pending Facility Verifications:**")
-        
-        # Creating a layout for the 3 Hospitals and Supplier
-        v_col1, v_col2, v_col3 = st.columns([2, 1, 1])
-        
-        with v_col1:
-            st.text("🏥 Soweto South Clinic")
-            st.text("🏥 Tembisa General")
-            st.text("🏥 Diepsloot Hub")
-            st.text("🚚 PhamaLogistics SA (Supplier)")
-        
-        with v_col2:
-            st.caption("0x921...F11e")
-            st.caption("0x4B2...33a2")
-            st.caption("0x5C8...88d1")
-            st.caption("0x71C...d897")
-            
-        with v_col3:
-            if st.button("Verify Soweto", key="v1"): st.success("Soweto Node Verified")
-            if st.button("Verify Tembisa", key="v2"): st.success("Tembisa Node Verified")
-            if st.button("Verify Diepsloot", key="v3"): st.success("Diepsloot Node Verified")
-            if st.button("Verify Supplier", key="v4"): st.success("Supplier Node Verified")
-
         # Manual Authority Granting
         st.markdown("#### Authorize New Role Entry")
         new_addr = st.text_input("Enter Wallet Address", placeholder="0x...")
