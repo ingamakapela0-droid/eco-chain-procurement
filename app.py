@@ -294,6 +294,77 @@ elif page == "💳 Subscription & Tiers":
         """)
 
     st.success("🎯 **Final Presentation Note:** For large suppliers, a R54,000 annual fee is negligible compared to the millions lost annually in logistics delays and manual procurement errors. This makes the business model highly realistic for the Gauteng market.")
+    # --- PAGE: PERSONNEL DIRECTORY ---
+elif page == "👥 Personnel Directory":
+    st.title("👥 Personnel & Access Governance")
+    st.markdown("### Gauteng Regional Network Participants")
+
+    st.info("""
+        **Governance Model:** This directory manages the decentralized identities of the procurement network. 
+        Permissions are cryptographically linked to roles to ensure only authorized personnel can 
+        interact with the medical supply ledger.
+    """)
+
+    # --- 1. CORE SYSTEM ROLES ---
+    st.subheader("System Access Levels")
+    role_data = {
+        "Designation": ["CEO", "ADMIN", "FINANCE", "SUPPLIER", "HOSPITALS"],
+        "Responsibility": [
+            "Executive Oversight & Strategic Planning",
+            "Network Governance & User Verification",
+            "Financial Audit & Subscription Management",
+            "Order Fulfillment & Stock Maintenance",
+            "Inventory Management & Patient Issuance"
+        ],
+        "Access Level": ["Full View", "Master Control", "Financial Only", "Supply Side", "Demand Side"]
+    }
+    st.table(role_data)
+
+    st.markdown("---")
+
+    # --- 2. ADMIN VERIFICATION PANEL ---
+    if current_role == "Admin" or current_role == "Guest Evaluator":
+        st.subheader("🛡️ Admin Verification Hub")
+        
+        if current_role == "Guest Evaluator":
+            st.warning("🔭 **Evaluator View:** Showing the verification interface for regional facilities.")
+
+        st.write("**Pending Facility Verifications:**")
+        
+        # Creating a layout for the 3 Hospitals and Supplier
+        v_col1, v_col2, v_col3 = st.columns([2, 1, 1])
+        
+        with v_col1:
+            st.text("🏥 Soweto South Clinic")
+            st.text("🏥 Tembisa General")
+            st.text("🏥 Diepsloot Hub")
+            st.text("🚚 PhamaLogistics SA (Supplier)")
+        
+        with v_col2:
+            st.caption("0x921...F11e")
+            st.caption("0x4B2...33a2")
+            st.caption("0x5C8...88d1")
+            st.caption("0x71C...d897")
+            
+        with v_col3:
+            if st.button("Verify Soweto", key="v1"): st.success("Soweto Node Verified")
+            if st.button("Verify Tembisa", key="v2"): st.success("Tembisa Node Verified")
+            if st.button("Verify Diepsloot", key="v3"): st.success("Diepsloot Node Verified")
+            if st.button("Verify Supplier", key="v4"): st.success("Supplier Node Verified")
+
+        # Manual Authority Granting
+        st.markdown("#### Authorize New Role Entry")
+        new_addr = st.text_input("Enter Wallet Address", placeholder="0x...")
+        new_role_select = st.selectbox("Assign Authority Level", ["HOSPITALS", "SUPPLIER", "FINANCE"])
+        
+        if st.button("Commit to Blockchain"):
+            st.info(f"Transaction pending: Granting {new_role_select} access to {new_addr}")
+            
+    else:
+        st.error("🔒 Access Denied: You must have an **ADMIN** or **CEO** role to view management tools.")
+
+    st.markdown("---")
+    st.caption("All roles are immutable once committed to the smart contract to prevent unauthorized access.")
 # --- 8. PAGE: ADMIN APPROVAL PANEL ---
 elif page == "🛠️ Admin Approval Panel":
     st.title("🛠️ Admin Verification Portal")
