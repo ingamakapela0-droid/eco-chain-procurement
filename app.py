@@ -224,7 +224,72 @@ elif page == "📈 Health Insights":
 
     st.markdown("---")
     st.warning("⚠️ **System Insight:** 6.1% average TB death rate and high loss-to-follow-up rates are often exacerbated by medication shortages. Eco-Chain's Smart Contracts automate fulfillment before stock reaches zero.")
+# --- PAGE: SUBSCRIPTION & TIERS ---
+elif page == "💳 Subscription & Tiers":
+    st.title("💳 Enterprise Governance & Sustainability")
+    st.markdown("### Eco-Chain High-Volume Revenue Model")
 
+    st.info("""
+        **Business Strategy:** Eco-Chain provides a dedicated, high-security channel for large-scale pharmaceutical suppliers. 
+        The platform remains **Free for the Department of Health**, shifting the operational costs to the private sector 
+        in exchange for streamlined procurement and predictive demand data.
+    """)
+
+    # --- ENTERPRISE PRICING TIERS ---
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+            <div style="border: 2px solid #64748B; padding: 25px; border-radius: 15px; background-color: #F8FAFC; min-height: 420px; text-align: center;">
+                <h3 style="color: #1E293B;">Quarterly Enterprise</h3>
+                <h2 style="margin: 10px 0;">R15,000</h2>
+                <p style="color: #64748B;">Billed Every 3 Months</p>
+                <hr>
+                <ul style="text-align: left; font-size: 0.95rem; color: #334155;">
+                    <li><b>Blockchain Node Access:</b> Direct connection to the Gauteng Ledger.</li>
+                    <li><b>Stockout Protection:</b> Real-time automated bidding for hospital shortages.</li>
+                    <li><b>Compliance:</b> Automated SABPP-standard reporting.</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+            <div style="border: 2px solid #0D9488; padding: 25px; border-radius: 15px; background-color: #F0FDF4; min-height: 420px; text-align: center;">
+                <span style="background-color: #0D9488; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">BEST VALUE - 10% OFF</span>
+                <h3 style="color: #065F46; margin-top: 10px;">Annual Strategic Partner</h3>
+                <h2 style="margin: 10px 0;">R54,000</h2>
+                <p style="color: #64748B;">Billed Yearly (Was <del>R60,000</del>)</p>
+                <hr>
+                <ul style="text-align: left; font-size: 0.95rem; color: #334155;">
+                    <li><b>All Quarterly Features</b></li>
+                    <li><b>Market Intelligence:</b> Predictive analytics for province-wide disease trends.</li>
+                    <li><b>Priority Support:</b> Dedicated 24/7 technical node maintenance.</li>
+                    <li><b>Custom ERP Integration:</b> Secure API bridge to supplier warehouses.</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # --- REVENUE FLOW & STABILITY ---
+    st.subheader("Financial Sustainability Indicators")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Transaction Fee", "0.5%", "Supplier-side")
+    m2.metric("Public Sector Cost", "R0.00", "Permanent")
+    m3.metric("Projected ROI", "215%", "First Year")
+
+    # --- BUSINESS CASE ---
+    st.subheader("Why Big Suppliers Pay This")
+    
+    with st.expander("Expand Strategic Value Proposition"):
+        st.write("""
+            - **Efficiency Gains:** Automated smart contracts reduce the order-to-cash cycle by 40%, significantly improving supplier cash flow.
+            - **Market Transparency:** Suppliers gain an unfair advantage by seeing precisely which regions (A-G) are running low on specific medications.
+            - **Reduced Losses:** Prevents over-production or expiration of medication by aligning supply with real-time Gauteng patient data.
+        """)
+
+    st.success("🎯 **Final Presentation Note:** For large suppliers, a R54,000 annual fee is negligible compared to the millions lost annually in logistics delays and manual procurement errors. This makes the business model highly realistic for the Gauteng market.")
 # --- 8. PAGE: ADMIN APPROVAL PANEL ---
 elif page == "🛠️ Admin Approval Panel":
     st.title("🛠️ Admin Verification Portal")
