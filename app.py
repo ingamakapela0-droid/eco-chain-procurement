@@ -323,7 +323,6 @@ elif page == "👥 Personnel Directory":
     st.markdown("---")
 
         # Manual Authority Granting
-        st.markdown("#### Authorize New Role Entry")
         new_addr = st.text_input("Enter Wallet Address", placeholder="0x...")
         new_role_select = st.selectbox("Assign Authority Level", ["HOSPITALS", "SUPPLIER", "FINANCE"])
         
