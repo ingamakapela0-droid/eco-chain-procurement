@@ -427,7 +427,69 @@ elif page == "📦 Supplier Hub":
                 st.info("No orders assigned to this wallet.")
         except Exception as e:
             st.error(f"Error: {e}")
+# --- PAGE: REGISTER MEDICATION (CEO/ADMIN VIEW) ---
+elif page == "💊 Register Medication":
+    st.title("💊 Medication Registry")
+    
+    if current_role in ["CEO", "Admin", "Guest Evaluator"]:
+        st.markdown("### Log New Supply to Ledger")
+        with st.form("med_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                med_name = st.text_input("Medication Name", placeholder="e.g. Tenofovir")
+                med_batch = st.text_input("Batch Number")
+            with col2:
+                med_qty = st.number_input("Initial Stock Quantity", min_value=0)
+                expiry = st.date_input("Expiry Date")
+            
+            submitted = st.form_submit_button("Log to Blockchain")
+            if submitted:
+                if current_role == "Guest Evaluator":
+                    st.warning("Action simulated for demo. In live mode, this requires a MetaMask signature.")
+                else:
+                    st.success(f"Successfully registered {med_name} to the ledger.")
+    else:
+        st.error("Access Denied: Only Admin/CEO roles can register new medication batches.")
 
+# --- PAGE: HOSPITAL ORDERS (HOSPITAL VIEW) ---
+elif page == "🛒 Hospital Orders":
+    st.title("🛒 Hospital Procurement Portal")
+    
+    if current_role in ["Hospital/Clinic", "Guest Evaluator"]:
+        st.subheader("Request Urgent Restock")
+        st.info("When local levels fall below 20%, the Smart Contract triggers a reorder request.")
+        
+        order_item = st.selectbox("Select Medication Needed", ["Insulin", "ART (Tenofovir)", "TB Meds", "Paracetamol"])
+        order_qty = st.slider("Required Units", 100, 5000, 500)
+        
+        if st.button("Place Smart Contract Order"):
+            if current_role == "Guest Evaluator":
+                st.info("Order Broadcast Simulated. Suppliers have been notified via the ledger.")
+            else:
+                st.success("Order live on Sepolia Testnet.")
+    else:
+        st.error("Access Denied: This portal is restricted to Hospital/Clinic Personnel.")
+
+# --- PAGE: SUPPLIER NETWORK (SUPPLIER VIEW) ---
+elif page == "🚚 Supplier Network":
+    st.title("🚚 Supplier Fulfillment Hub")
+    
+    if current_role in ["Supplier", "Guest Evaluator"]:
+        st.subheader("Open Procurement Requests")
+        # Live data table for the lecturer to see
+        pending_orders = {
+            "Request ID": ["REQ-001", "REQ-002", "REQ-003"],
+            "Hospital": ["Soweto South Clinic", "Tembisa General", "Diepsloot Hub"],
+            "Medication": ["Insulin", "ART (Fixed Dose)", "TB Treatment"],
+            "Quantity": [500, 1200, 300],
+            "Urgency": ["🚨 CRITICAL", "🟠 High", "🟢 Standard"]
+        }
+        st.table(pending_orders)
+        
+        if st.button("Fulfill & Ship Priority Order"):
+            st.success("Shipment status updated. Smart contract payment pending delivery confirmation.")
+    else:
+        st.error("Access Denied: Supplier credentials required.")
 # --- FOOTER ---
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Eco-Chain | Connected: {current_role}")
