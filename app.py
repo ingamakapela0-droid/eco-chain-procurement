@@ -90,27 +90,26 @@ else:
     st.sidebar.info("💡 Connect MetaMask to unlock transaction features.")
     if st.sidebar.button("Connect MetaMask"):
         streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' });", key="connect")
-# --- 5. NAVIGATION ---
-# These are the pages everyone can see
+# --- 5. NAVIGATION (STRICT ACCESS CONTROL) ---
+# 1. Base options for everyone
 nav_options = ["🏠 Dashboard", "📈 Health Insights", "💳 Subscription & Tiers", "📊 Request Access"]
 
-# --- ADDING ADMIN SPECIFIC PAGES ---
+# 2. Use 'if' statements to add restricted pages based on the role
 if current_role == "Admin":
-    # This adds the two pages you need to manage users
-    nav_options.append("👥 Personnel Directory")   # For manual team management
-    nav_options.append("🛠️ Admin Approval Panel") # For blockchain request approvals
+    # Admin gets the full toolkit back
+    nav_options += ["👥 Personnel Directory", "🛠️ Admin Approval Panel", "📜 View Orders"]
 
-# --- ADDING OTHER ROLE PAGES ---
 elif current_role == "CEO":
     nav_options += ["💊 Register Medication", "📜 View Orders"]
+
 elif current_role == "Hospital":
     nav_options.append("💊 Issue Medication")
+
 elif current_role == "Supplier":
     nav_options.append("📦 Supplier Hub")
 
-page = st.sidebar.radio("Navigation", nav_options)
-
-page = st.sidebar.radio("Navigation", nav_options)
+# 3. THE ONLY RADIO BUTTON (Make sure this line exists ONLY once)
+page = st.sidebar.radio("Navigation Menu", nav_options)
 # --- 6. PAGE: DASHBOARD ---
 if page == "🏠 Dashboard":
     # Hero Section Title (Logo is now handled permanently in the sidebar/Section 4)
