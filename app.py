@@ -556,13 +556,6 @@ elif page == "🚚 Supplier Network":
     if current_role in ["Supplier", "Guest Evaluator"]:
         st.subheader("Open Procurement Requests")
         # Live data table for the lecturer to see
-        pending_orders = {
-            "Request ID": ["REQ-001", "REQ-002", "REQ-003"],
-            "Hospital": ["Soweto South Clinic", "Tembisa General", "Diepsloot Hub"],
-            "Medication": ["Insulin", "ART (Fixed Dose)", "TB Treatment"],
-            "Quantity": [500, 1200, 300],
-            "Urgency": ["🚨 CRITICAL", "🟠 High", "🟢 Standard"]
-        }
         st.table(pending_orders)
         
         if st.button("Fulfill & Ship Priority Order"):
