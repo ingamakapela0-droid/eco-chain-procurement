@@ -91,15 +91,24 @@ else:
     if st.sidebar.button("Connect MetaMask"):
         streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' });", key="connect")
 # --- 5. NAVIGATION ---
-# We allow the 'Guest Evaluator' to see all pages in the list
-nav_options = [
-    "🏠 Dashboard", 
-    "📈 Health Insights", 
-    "💳 Subscription & Tiers", 
-    "👥 Personnel Directory", # She needs to see the personals
-    "🚚 Supplier Network",     # She needs to see the suppliers
-    "📜 Transaction Ledger"    # She needs to see recorded transactions
-]
+# These are the pages everyone can see
+nav_options = ["🏠 Dashboard", "📈 Health Insights", "💳 Subscription & Tiers", "📊 Request Access"]
+
+# --- ADDING ADMIN SPECIFIC PAGES ---
+if current_role == "Admin":
+    # This adds the two pages you need to manage users
+    nav_options.append("👥 Personnel Directory")   # For manual team management
+    nav_options.append("🛠️ Admin Approval Panel") # For blockchain request approvals
+
+# --- ADDING OTHER ROLE PAGES ---
+elif current_role == "CEO":
+    nav_options += ["💊 Register Medication", "📜 View Orders"]
+elif current_role == "Hospital":
+    nav_options.append("💊 Issue Medication")
+elif current_role == "Supplier":
+    nav_options.append("📦 Supplier Hub")
+
+page = st.sidebar.radio("Navigation", nav_options)
 
 page = st.sidebar.radio("Navigation", nav_options)
 # --- 6. PAGE: DASHBOARD ---
