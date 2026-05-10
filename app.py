@@ -21,13 +21,14 @@ w3 = Web3(Web3.HTTPProvider(RPC_URL))
 contract = w3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
 
 # --- 3. STYLING & LOGO ---
-st.set_page_config(page_title="Eco-Chain | Gauteng Health", layout="wide")
+st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
 
-# Replace the URL below with your actual GitHub Raw Image URL
+# Replace this with your GitHub Raw URL when ready
 LOGO_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/logo.png"
 
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     .main { background-color: #F8FAFC; }
     .hero-section {
         background: linear-gradient(90deg, #0D9488 0%, #0F766E 100%);
@@ -38,50 +39,17 @@ st.markdown("""
         margin-bottom: 30px;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
-    .mission-card {
-        background-color: white;
-        padding: 25px;
-        border-radius: 15px;
-        border-top: 5px solid #0D9488;
+    .mission-container { 
+        background-color: white; 
+        padding: 30px; 
+        border-radius: 15px; 
+        border-left: 8px solid #0D9488; 
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        color: #1E293B;
     }
-    .highlight { color: #0D9488; font-weight: bold; }
+    .mission-header { color: #0F172A; font-weight: 700; font-size: 1.6rem; margin-top: 0; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; background-color: #0D9488; color: white; }
     </style>
     """, unsafe_allow_html=True)
-
-# --- 6. PAGE: DASHBOARD ---
-if page == "🏠 Dashboard":
-    # Top Logo & Header
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        st.image(LOGO_URL, width=150)
-    with col2:
-        st.title("Gauteng Health Digital Ledger")
-        st.subheader("Smart Supply Chain for Regional Hospitals")
-
-    # The "Attractive" Mission
-    st.markdown("""
-    <div class="hero-section">
-        <h1>Ensuring No Patient is Left Behind</h1>
-        <p style="font-size: 1.2rem;">Revolutionizing medication availability through Blockchain Transparency and Automated Procurement.</p>
-    </div>
-    
-    <div class="mission-card">
-        <h3 style="margin-top: 0;">🌍 Our Strategic Mission</h3>
-        <p>Eco-Chain transforms the <span class="highlight">Gauteng Healthcare Supply Chain</span> from a manual, reactive process into a 
-        <b>fully autonomous, blockchain-verified network</b>. By connecting hospitals directly to pharmaceutical suppliers, 
-        we eliminate human error, prevent stockouts of life-saving chronic medication, and ensure every Rand is accounted for through 
-        <span class="highlight">Smart Contract Governance</span>.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Key Metrics for the CEO
-    st.markdown("### Regional Network Status")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Network", "Sepolia Testnet", "Active")
-    m2.metric("Contract Security", "Audited", "100%")
-    m3.metric("Gauteng Hubs", "3 Connected", "Live")
 
 # --- 4. WALLET & ROLE DETECTION ---
 st.sidebar.title("🌿 Eco-Chain")
@@ -94,7 +62,6 @@ if raw_wallet:
     wallet_address = Web3.to_checksum_address(raw_wallet)
     st.sidebar.success(f"Connected: {wallet_address[:6]}...{wallet_address[-4:]}")
     
-    # Static addresses for Admin and CEO
     CEO_ADDR = "0x35922c63dc498E133cDED15e459153f0EFE6F4D0"
     ADMIN_ADDR = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
 
@@ -113,32 +80,71 @@ else:
     if st.sidebar.button("Connect MetaMask"):
         streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' });", key="connect")
 
-# --- 5. NAVIGATION (FIXED NameError) ---
-# Define common pages
+# --- 5. NAVIGATION ---
 nav_options = ["🏠 Dashboard", "📈 Health Insights", "📊 Request Access"]
 
-# Add role-specific pages
 if current_role == "Admin":
     nav_options.append("🛠️ Admin Approval Panel")
 elif current_role == "CEO":
     nav_options += ["💊 Register Medication", "📜 View Orders"]
 elif current_role == "Hospital":
     nav_options.append("💊 Issue Medication")
+elif current_role == "Supplier":
+    nav_options.append("📦 Supplier Hub")
 
-# This creates the 'page' variable globally - DO NOT INDENT THIS LINE
 page = st.sidebar.radio("Navigation", nav_options)
 
 # --- 6. PAGE: DASHBOARD ---
 if page == "🏠 Dashboard":
-    st.title("🏥 Gauteng Regional Procurement")
+    # Hero Section with Logo and Title
+    col1, col2 = st.columns([1, 4])
+    
+    with col1:
+        # This handles the logo safely without crashing
+        try:
+            st.image(LOGO_URL, width=150)
+        except:
+            # Safe backup if the URL isn't working
+            st.image("https://cdn-icons-png.flaticon.com/512/3063/3063822.png", width=150)
+    
+    with col2:
+        st.markdown(f"""
+            <div style="padding-top: 10px;">
+                <h1 style='color: #0D9488; margin-bottom: 0;'>Eco-Chain Procurement Solutions</h1>
+                <p style='font-size: 1.2rem; color: #64748B;'><i>The Digital Bridge for Gauteng's Healthcare Supply Chain</i></p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # The High-Impact Mission Statement
     st.markdown("""
+    <div class="hero-section">
+        <h2 style="color: white; margin-top: 0;">Eliminating Stockouts. Saving Lives.</h2>
+        <p style="font-size: 1.15rem; line-height: 1.6;">
+            Eco-Chain is an autonomous procurement platform designed to solve the abrupt shortage of 
+            critical medication in South African hospitals. By acting as a <b>real-time bridge</b> between 
+            dispensaries and pharmaceutical suppliers, we ensure life-saving care is always available.
+        </p>
+    </div>
+    
     <div class="mission-container">
-        <h3 class="mission-header">Mission Statement</h3>
-        <p><b>Eco-Chain</b> bridges the gap between Gauteng healthcare facilities and pharmaceutical suppliers. 
-        Using <b>Blockchain</b>, we track stock and automate payments to prevent shortages.</p>
+        <h3 class="mission-header">Strategic Operational Model</h3>
+        <p style="font-size: 1.1rem; color: #334155;">
+            Our application monitors real-time medication stock levels at regional dispensaries. When usage 
+            reaches a critical <b>Minimum Threshold</b>, the blockchain automatically notifies pharmaceutical suppliers. 
+            This eliminates manual delays, prevents stockouts, and ensures that medication is delivered 
+            to clinics before the shelves run empty.
+        </p>
     </div>
     """, unsafe_allow_html=True)
-    st.metric("Network Status", "Sepolia Active")
+
+    # Key Network Metrics
+    st.markdown("### Regional Network Status")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Network", "Sepolia Testnet", "Active")
+    m2.metric("Contract Security", "Blockchain Verified", "100%")
+    m3.metric("Gauteng Hubs", "Regional Connectivity", "Live")
 
 # --- 7. PAGE: HEALTH INSIGHTS ---
 elif page == "📈 Health Insights":
