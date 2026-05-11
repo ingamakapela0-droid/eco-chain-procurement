@@ -1,574 +1,562 @@
-import streamlit as st
-import pandas as pd
+# ========================= app.py =========================
+
+# pip install streamlit web3 streamlit-js-eval
+
 import os
 import json
-from datetime import datetime
+import streamlit as st
 from web3 import Web3
 from streamlit_js_eval import streamlit_js_eval
 
-# --- 1. IMPORT FROM YOUR CORRECT CONFIG ---
-try:
-    from config import (
-        CONTRACT_ADDRESS, CONTRACT_ABI, RPC_URL, 
-        MEDICATION_DATABASE, CATEGORY_MAPPING, ROLE_NAMES
-    )
-except ImportError:
-    st.error("Missing config.py! Please ensure config.py is in the same folder.")
-    st.stop()
+from config import *
 
-# --- 2. BLOCKCHAIN CONNECTION ---
+# Configure Streamlit page
+st.set_page_config(page_title=APP_NAME, layout="wide")
+
+# Connect to Sepolia network
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
-contract = w3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=CONTRACT_ABI)
 
-# --- 3. STYLING & LOGO ---
-st.set_page_config(page_title="Eco-Chain | Gauteng Procurement", layout="wide")
-
-# Replace this with your GitHub Raw URL when ready
-LOGO_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/logo.png"
-
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    .main { background-color: #F8FAFC; }
-    .hero-section {
-        background: linear-gradient(90deg, #0D9488 0%, #0F766E 100%);
-        padding: 40px;
-        border-radius: 20px;
-        color: white;
-        text-align: center;
-        margin-bottom: 30px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-    .mission-container { 
-        background-color: white; 
-        padding: 30px; 
-        border-radius: 15px; 
-        border-left: 8px solid #0D9488; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .mission-header { color: #0F172A; font-weight: 700; font-size: 1.6rem; margin-top: 0; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; font-weight: bold; background-color: #0D9488; color: white; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 4. WALLET & ROLE DETECTION ---
-import os
-
-# Sidebar Logo Logic
-if os.path.exists("logo.png"):
-    st.sidebar.image("logo.png", use_container_width=True)
-else:
-    st.sidebar.title("🌿 Eco-Chain")
-
-# MetaMask Detection
-raw_wallet = streamlit_js_eval(
-    js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", 
-    key="wallet"
+# Create contract object
+contract = w3.eth.contract(
+    address=w3.to_checksum_address(CONTRACT_ADDRESS),
+    abi=CONTRACT_ABI
 )
 
-# DEFAULT ROLE FOR LECTURER (Ensures she sees everything)
-current_role = "Guest Evaluator"
+# ============================================================
+# HEADER
+# ============================================================
+
+try:
+    if LOGO_PATH and os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=180)
+    else:
+        st.title(APP_NAME)
+except Exception:
+    st.title(APP_NAME)
+
+st.caption(APP_TAGLINE)
+st.write(APP_DESCRIPTION)
+
+# ============================================================
+# METAMASK CONNECTION
+# ============================================================
+
+st.sidebar.title("Wallet Connection")
+
+wallet_data = streamlit_js_eval(
+    js_expressions="""
+    new Promise(async (resolve) => {
+        if (window.ethereum) {
+            const accounts = await window.ethereum.request({
+                method: 'eth_accounts'
+            });
+
+            const chainId = await window.ethereum.request({
+                method: 'eth_chainId'
+            });
+
+            resolve({
+                accounts: accounts,
+                chainId: chainId
+            });
+        } else {
+            resolve(null);
+        }
+    })
+    """,
+    key="wallet_check"
+)
+
 wallet_address = None
+network_ok = False
 
-if raw_wallet:
-    wallet_address = Web3.to_checksum_address(raw_wallet)
-    st.sidebar.success(f"Connected: {wallet_address[:6]}...{wallet_address[-4:]}")
-    
-    # Static addresses
-    CEO_ADDR = "0x35922c63dc498E133cDED15e459153f0EFE6F4D0"
-    ADMIN_ADDR = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
+if wallet_data is None:
+    st.sidebar.warning(
+        "MetaMask was not detected. Please install MetaMask in your browser."
+    )
 
-    if wallet_address.lower() == CEO_ADDR.lower():
-        current_role = "CEO"
-    elif wallet_address.lower() == ADMIN_ADDR.lower():
-        current_role = "Admin"
-    else:
-        current_role = "Authorized Personnel"
 else:
-    # This is what the lecturer will see
-    st.sidebar.warning("Viewing as: **Guest Evaluator**")
-    st.sidebar.info("💡 Connect MetaMask to unlock transaction features.")
-    if st.sidebar.button("Connect MetaMask"):
-        streamlit_js_eval(js_expressions="window.ethereum.request({ method: 'eth_requestAccounts' });", key="connect")
+    accounts = wallet_data.get("accounts", [])
+    chain_id = wallet_data.get("chainId", "")
 
-# --- 5. NAVIGATION ---
-nav_options = ["🏠 Dashboard", "📈 Health Insights", "💳 Subscription & Tiers"]
+    if len(accounts) > 0:
+        wallet_address = accounts[0]
 
-if current_role == "Admin":
-    nav_options += ["👥 Personnel Directory", "🛠️ Admin Approval Panel", "📜 View Orders"]
-elif current_role == "CEO":
-    nav_options += ["💊 Register Medication", "📜 View Orders"]
-elif current_role == "Hospital":
-    nav_options.append("💊 Issue Medication")
-elif current_role == "Supplier":
-    # ADDED: This ensures the Supplier can see where to pay and where to handle orders
-    nav_options += ["📦 Supplier Hub", "📊 Request Access"]
+    if chain_id == hex(SEPOLIA_CHAIN_ID):
+        network_ok = True
 
-page = st.sidebar.radio("Navigation Menu", nav_options)
-# --- 6. PAGE: DASHBOARD ---
-if page == "🏠 Dashboard":
-    # Hero Section Title (Logo is now handled permanently in the sidebar/Section 4)
-    st.markdown(f"""
-        <div style="padding-top: 10px;">
-            <h1 style='color: #0D9488; margin-bottom: 0;'>Eco-Chain Procurement Solutions</h1>
-            <p style='font-size: 1.2rem; color: #64748B;'><i>The Digital Bridge for Gauteng's Healthcare Supply Chain</i></p>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # The High-Impact Mission Statement
-    st.markdown("""
-    <div class="hero-section">
-        <h2 style="color: white; margin-top: 0;">Eliminating Stockouts. Saving Lives.</h2>
-        <p style="font-size: 1.15rem; line-height: 1.6;">
-            Eco-Chain is a next-generation procurement platform designed to solve the abrupt shortage of 
-            critical medication in South African hospitals. By acting as a <b>real-time bridge</b> between 
-            dispensaries and pharmaceutical suppliers, we ensure life-saving care is always available.
-        </p>
-    </div>
-    
-    <div class="mission-container">
-        <h3 class="mission-header">Strategic Operational Model</h3>
-        <p style="font-size: 1.1rem; color: #334155; line-height: 1.6;">
-            Our application monitors real-time medication stock levels at regional dispensaries. When usage 
-            reaches a critical <b>Minimum Threshold</b>, the blockchain automatically notifies pharmaceutical suppliers 
-            through <b>Smart Contract Governance</b>. This eliminates manual delays, prevents stockouts, and ensures 
-            that medication is delivered to clinics before the shelves run empty.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Key Network Metrics
-    st.markdown("### Regional Network Status")
-    m1, m2, m3 = st.columns(3)
-    
-    m1.metric("Network", "Sepolia Testnet", "Active")
-    m2.metric("Contract Security", "Blockchain Verified", "100%")
-    m3.metric("Gauteng Hubs", "Regional Connectivity", "Live")
-
-    # Footer Status
-    st.success(f"Successfully connected to Gauteng Regional Ledger. Current Access: {current_role}")
-# --- PAGE: HEALTH INSIGHTS ---
-elif page == "📈 Health Insights":
-    st.title("📊 Regional Health Data Analytics")
-    st.markdown("### City of Johannesburg HIV & TB Epidemic Trends")
-    
-    st.info("""
-        **Strategic Context:** This data justifies the existence of Eco-Chain. High patient volumes 
-        and the current 21% ART shortfall require an automated, blockchain-verified supply chain 
-        to ensure zero medication stockouts.
-    """)
-
-    # --- TABBED VIEW FOR DATA ---
-    tab1, tab2, tab3 = st.tabs(["🔴 HIV Statistics", "🔵 TB Statistics", "📍 Regional Coverage"])
-
-    with tab1:
-        st.subheader("HIV Positive Test Results (April 2019 - March 2020)")
-        
-        # Data transcribed from Table 6
-        hiv_data = {
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G", "City Total"],
-            "HIV Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062, 1846503],
-            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773, 114397],
-            "Positivity Rate (%)": [5.9, 4.9, 7.1, 5.8, 5.2, 7.8, 6.2, 6.2]
-        }
-        st.table(hiv_data)
-
-        st.subheader("ART Adherence & Gap Analysis (YTD 2019/20)")
-        # Data transcribed from Table 7
-        art_data = {
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-            "Target Population": [72898, 29347, 41906, 146046, 44658, 107182, 74479],
-            "Actual on ART": [58829, 22271, 34993, 115098, 37839, 83650, 56560],
-            "Gap (Missing Treatment)": [14069, 7076, 6913, 30948, 6819, 23532, 17919],
-            "Progress (%)": [80.7, 75.9, 83.5, 78.8, 84.7, 78.0, 75.9]
-        }
-        st.bar_chart(data=art_data, x="Region", y="Actual on ART")
-        st.write("**Note:** Region D shows the highest gap (30,948 patients), indicating a critical need for supply chain optimization in that area.")
-        st.table(art_data)
-
-    with tab2:
-        st.subheader("Drug Sensitive TB Treatment Outcomes")
-        # Data transcribed from Table 4
-        tb_data = {
-            "Organisation/Unit": ["City of Joburg", "Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-            "Treatment Success (%)": [83.4, 89.4, 90.3, 87.5, 80.5, 87.0, 80.7, 81.5],
-            "Death Rate (%)": [6.1, 5.3, 3.7, 4.3, 7.8, 4.0, 7.1, 7.1],
-            "Lost to Follow-up (%)": [9.1, 4.8, 5.5, 8.2, 10.9, 6.7, 9.6, 11.0]
-        }
-        st.write("Target Death Rate: < 5% | Target Lost to Follow-up: < 5.5%")
-        st.dataframe(tb_data, use_container_width=True)
-
-    with tab3:
-        st.subheader("City of Johannesburg Health Facility Mapping")
-        
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            st.markdown("""
-            **Primary Hubs per Region:**
-            - **Region A:** Diepsloot, Midrand, Lanseria
-            - **Region B:** Randburg, Rosebank, Parktown
-            - **Region C:** Roodepoort, Florida, Bram Fischerville
-            - **Region D:** Soweto, Doornkop, Protea Glen
-            """)
-        with col_m2:
-            st.markdown("""
-            - **Region E:** Alexandra, Sandton, Houghton
-            - **Region F:** Inner City, Johannesburg South
-            - **Region G:** Orange Farm, Ennerdale, Lenasia
-            """)
-            
-        st.info("💡 Eco-Chain nodes are strategically placed across these 7 regions to ensure equitable medication distribution.")
-
-    st.markdown("---")
-    st.warning("⚠️ **System Insight:** 6.1% average TB death rate and high loss-to-follow-up rates are often exacerbated by medication shortages. Eco-Chain's Smart Contracts automate fulfillment before stock reaches zero.")
-# --- PAGE: SUBSCRIPTION & TIERS ---
-elif page == "💳 Subscription & Tiers":
-    st.title("💳 Enterprise Governance & Sustainability")
-    st.markdown("### Eco-Chain High-Volume Revenue Model")
-
-    st.info("""
-        **Business Strategy:** Eco-Chain provides a dedicated, high-security channel for large-scale pharmaceutical suppliers. 
-        The platform remains **Free for the Department of Health**, shifting the operational costs to the private sector 
-        in exchange for streamlined procurement and predictive demand data.
-    """)
-
-    # --- ENTERPRISE PRICING TIERS ---
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("""
-            <div style="border: 2px solid #64748B; padding: 25px; border-radius: 15px; background-color: #F8FAFC; min-height: 420px; text-align: center;">
-                <h3 style="color: #1E293B;">Quarterly Enterprise</h3>
-                <h2 style="margin: 10px 0;">R15,000</h2>
-                <p style="color: #64748B;">Billed Every 3 Months</p>
-                <hr>
-                <ul style="text-align: left; font-size: 0.95rem; color: #334155;">
-                    <li><b>Blockchain Node Access:</b> Direct connection to the Gauteng Ledger.</li>
-                    <li><b>Stockout Protection:</b> Real-time automated bidding for hospital shortages.</li>
-                    <li><b>Compliance:</b> Automated SABPP-standard reporting.</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("""
-            <div style="border: 2px solid #0D9488; padding: 25px; border-radius: 15px; background-color: #F0FDF4; min-height: 420px; text-align: center;">
-                <span style="background-color: #0D9488; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">BEST VALUE - 10% OFF</span>
-                <h3 style="color: #065F46; margin-top: 10px;">Annual Strategic Partner</h3>
-                <h2 style="margin: 10px 0;">R54,000</h2>
-                <p style="color: #64748B;">Billed Yearly (Was <del>R60,000</del>)</p>
-                <hr>
-                <ul style="text-align: left; font-size: 0.95rem; color: #334155;">
-                    <li><b>All Quarterly Features</b></li>
-                    <li><b>Market Intelligence:</b> Predictive analytics for province-wide disease trends.</li>
-                    <li><b>Priority Support:</b> Dedicated 24/7 technical node maintenance.</li>
-                    <li><b>Custom ERP Integration:</b> Secure API bridge to supplier warehouses.</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # --- REVENUE FLOW & STABILITY ---
-    st.subheader("Financial Sustainability Indicators")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Transaction Fee", "0.5%", "Supplier-side")
-    m2.metric("Public Sector Cost", "R0.00", "Permanent")
-    m3.metric("Projected ROI", "215%", "First Year")
-
-    # --- BUSINESS CASE ---
-    st.subheader("Why Big Suppliers Pay This")
-    
-    with st.expander("Expand Strategic Value Proposition"):
-        st.write("""
-            - **Efficiency Gains:** Automated smart contracts reduce the order-to-cash cycle by 40%, significantly improving supplier cash flow.
-            - **Market Transparency:** Suppliers gain an unfair advantage by seeing precisely which regions (A-G) are running low on specific medications.
-            - **Reduced Losses:** Prevents over-production or expiration of medication by aligning supply with real-time Gauteng patient data.
-        """)
-
-    st.success("🎯 **Final Presentation Note:** For large suppliers, a R54,000 annual fee is negligible compared to the millions lost annually in logistics delays and manual procurement errors. This makes the business model highly realistic for the Gauteng market.")
-    # --- PAGE: PERSONNEL DIRECTORY ---
-elif page == "👥 Personnel Directory":
-    st.title("👥 Personnel & Access Governance")
-    st.markdown("### Gauteng Regional Network Participants")
-
-    st.info("""
-        **Governance Model:** Permissions are cryptographically linked to roles. 
-        The System Admin verifies incoming registration requests directly on the Sepolia ledger.
-    """)
-
-    # --- 1. CORE SYSTEM ROLES ---
-    st.subheader("System Access Levels")
-    role_data = {
-        "Designation": ["CEO", "ADMIN", "FINANCE", "SUPPLIER", "HOSPITALS"],
-        "Access Level": ["Full View", "Master Control", "Financial Only", "Supply Side", "Demand Side"]
-    }
-    st.table(role_data)
-
-    st.markdown("---")
-
-    # --- 2. ADMIN VERIFICATION HUB ---
-    if current_role == "Admin" or current_role == "Guest Evaluator":
-        st.subheader("🛡️ Pending Blockchain Verifications")
-        
-        # We try to fetch the real length of the registration requests from your contract
-        # If your contract doesn't have a list, we show a clean manual verification tool
-        try:
-            # This is a cleaner, more technical way to show the verification process
-            st.write("Examine incoming cryptographic requests for network access:")
-            
-            # Manual Authority Granting (This is the most professional way for an Admin to work)
-            with st.container():
-                st.markdown("#### Authorize New Role Entry")
-                new_addr = st.text_input("Target Wallet Address", placeholder="0x...")
-                new_role_select = st.selectbox("Assign Authority Level", ["HOSPITALS", "SUPPLIER", "FINANCE"])
-                
-                if st.button("Commit Role to Blockchain"):
-                    if not wallet_address:
-                        st.error("Please connect Admin Wallet to sign this transaction.")
-                    elif not Web3.is_address(new_addr):
-                        st.warning("Invalid Ethereum Address format.")
-                    else:
-                        # REAL BLOCKCHAIN CALL
-                        try:
-                            nonce = w3.eth.get_transaction_count(wallet_address)
-                            # We use your approveRegistration function here
-                            tx = contract.functions.approveRegistration(Web3.to_checksum_address(new_addr)).build_transaction({
-                                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
-                            })
-                            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
-                            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-                            st.success(f"Authorization transaction for {new_addr[:10]}... initiated.")
-                        except Exception as e:
-                            st.error(f"Execution Error: {e}")
-        except:
-            st.warning("Unable to fetch live request pool. Ensure contract is deployed to Sepolia.")
-            
-    else:
-        st.error("🔒 Access Denied: Administrative credentials required.")
-
-    st.markdown("---")
-    st.caption("Network: Sepolia Testnet | Protocol: RBAC-EIP")
-# --- 8. PAGE: ADMIN APPROVAL PANEL ---
-elif page == "🛠️ Admin Approval Panel":
-    st.title("🛠️ Admin Verification Portal")
-    st.write("Approve registration requests for the blockchain network.")
-    
-    target_addr = st.text_input("Wallet Address to Approve")
-    
-    if st.button("✅ Verify & Approve User"):
-        if not wallet_address:
-            st.error("Connect Admin Wallet First")
-        elif not Web3.is_address(target_addr):
-            st.warning("Invalid Wallet Address")
-        else:
-            nonce = w3.eth.get_transaction_count(wallet_address)
-            tx = contract.functions.approveRegistration(Web3.to_checksum_address(target_addr)).build_transaction({
-                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
-            })
-            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
-            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-            st.success("Approval sent to blockchain.")
-
-# --- 9. PAGE: REQUEST ACCESS ---
-elif page == "📊 Request Access":
-    st.title("📊 Request System Access")
-    role_choice = st.selectbox("Register as:", ["Hospital", "Supplier"])
-    role_id = 1 if role_choice == "Hospital" else 2
-    
-    if st.button("Submit Request"):
-        if not wallet_address:
-            st.error("Connect Wallet First")
-        else:
-            nonce = w3.eth.get_transaction_count(wallet_address)
-            tx = contract.functions.requestRegistration(role_id).build_transaction({
-                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
-            })
-            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
-            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-            st.info("Registration request submitted.")
-
-# --- 10. PAGE: REGISTER MEDICATION (CEO ONLY) ---
-elif page == "💊 Register Medication":
-    st.title("💊 Register New Medication")
-    st.write("CEO Portal: Link a new drug to a supplier and set automated reorder levels.")
-    
-    with st.form("reg_form"):
-        cat = st.selectbox("Category", list(MEDICATION_DATABASE.keys()))
-        med_name = st.selectbox("Medication Name", list(MEDICATION_DATABASE[cat].keys()))
-        supplier_addr = st.text_input("Supplier Wallet Address (0x...)", placeholder="Paste Supplier Wallet Here")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1: initial_stock = st.number_input("Initial Stock", min_value=1, value=100)
-        with col2: threshold = st.number_input("Reorder Threshold", min_value=1, value=10)
-        with col3: price = st.number_input("Unit Price (Wei)", min_value=1, value=1000)
-
-        if st.form_submit_button("🚀 Register on Blockchain"):
-            if not wallet_address:
-                st.error("Please connect CEO wallet.")
-            elif not Web3.is_address(supplier_addr):
-                st.warning("Invalid Supplier Address.")
-            else:
-                try:
-                    nonce = w3.eth.get_transaction_count(wallet_address)
-                    cat_id = CATEGORY_MAPPING[cat]
-                    
-                    # Call smart contract
-                    tx = contract.functions.registerMedication(
-                        med_name, cat_id, initial_stock, threshold, initial_stock, price, Web3.to_checksum_address(supplier_addr)
-                    ).build_transaction({
-                        "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 300000, "gasPrice": w3.eth.gas_price
-                    })
-
-                    tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
-                    streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-                    st.success(f"Registration for {med_name} initiated!")
-                except Exception as e:
-                    st.error(f"Blockchain Error: {e}")
-
-# --- 11. PAGE: ISSUE MEDICATION (HOSPITAL ONLY) ---
-elif page == "💊 Issue Medication":
-    st.title("💊 Issue Medication to Patient")
-    st.write("Hospital Portal: Record usage. Automated orders trigger when stock < threshold.")
-
-    all_meds = []
-    for cat in MEDICATION_DATABASE:
-        all_meds.extend(list(MEDICATION_DATABASE[cat].keys()))
-
-    selected_med = st.selectbox("Select Medication", all_meds)
-    
-    if st.button("Confirm Issuance"):
-        try:
-            nonce = w3.eth.get_transaction_count(wallet_address)
-            tx = contract.functions.issueMedication(selected_med).build_transaction({
-                "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000, "gasPrice": w3.eth.gas_price
-            })
-            tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
-            streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-            st.info("Issuance transaction sent to MetaMask.")
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-# --- 12. PAGE: VIEW ORDERS (CEO & ADMIN) ---
-elif page == "📜 View Orders":
-    st.title("📜 Procurement Order Ledger")
-    try:
-        count = contract.functions.orderCount().call()
-        if count == 0:
-            st.info("No orders found.")
-        else:
-            orders_data = []
-            for i in range(1, count + 1):
-                order = contract.functions.orders(i).call()
-                orders_data.append({
-                    "ID": order[0], "Medication": order[1], "Qty": order[2], 
-                    "Supplier": order[4], "Status": "Created" if order[5] == 0 else "Completed"
-                })
-            st.table(pd.DataFrame(orders_data))
-    except Exception as e:
-        st.error(f"Fetch Error: {e}")
-
-# --- 13. PAGE: SUPPLIER HUB ---
-elif page == "📦 Supplier Hub":
-    st.title("📦 Supplier Fulfillment Portal")
     if not wallet_address:
-        st.warning("Connect Supplier Wallet.")
-    else:
-        try:
-            count = contract.functions.orderCount().call()
-            my_orders = []
-            for i in range(1, count + 1):
-                order = contract.functions.orders(i).call()
-                if order[4].lower() == wallet_address.lower():
-                    my_orders.append({
-                        "ID": order[0], "Medication": order[1], "Qty": order[2], 
-                        "Status": "📦 Pending" if order[5] == 0 else "✅ Done"
+        if st.sidebar.button("Connect MetaMask Wallet"):
+            streamlit_js_eval(
+                js_expressions="""
+                window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                })
+                """,
+                key="wallet_connect"
+            )
+            st.rerun()
+
+    if wallet_address:
+        st.sidebar.success("Wallet Connected")
+        st.sidebar.code(wallet_address)
+
+    if not network_ok:
+        st.sidebar.warning(
+            "Please switch MetaMask to the Sepolia network."
+        )
+
+# ============================================================
+# SIDEBAR NAVIGATION
+# ============================================================
+
+page = st.sidebar.radio(
+    "Navigation",
+    [
+        "Overview Dashboard",
+        "Medication Inventory",
+        "Medication Issuing",
+        "Purchase Orders",
+        "User Registration",
+        "Administration"
+    ]
+)
+
+# ============================================================
+# HELPER FUNCTION
+# ============================================================
+
+def send_transaction(tx):
+    """Send unsigned transaction to MetaMask."""
+
+    tx_json = json.dumps(tx)
+
+    result = streamlit_js_eval(
+        js_expressions=f"""
+        ethereum.request({{
+            method: 'eth_sendTransaction',
+            params: [{tx_json}]
+        }})
+        """,
+        key=str(tx["nonce"])
+    )
+
+    return result
+
+# ============================================================
+# OVERVIEW DASHBOARD
+# ============================================================
+
+if page == "Overview Dashboard":
+
+    st.header("System Overview")
+
+    try:
+        with st.spinner("Fetching contract information..."):
+
+            admin = contract.functions.admin().call()
+            ceo = contract.functions.ceo().call()
+            finance = contract.functions.financialOfficer().call()
+
+            balance = contract.functions.getContractBalance().call()
+            order_count = contract.functions.orderCount().call()
+
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric("Total Purchase Orders", order_count)
+            col2.metric(
+                "Contract Balance (ETH)",
+                str(w3.from_wei(balance, "ether"))
+            )
+            col3.metric(
+                "Connected Network",
+                "Sepolia" if network_ok else "Wrong Network"
+            )
+
+            st.info(f"Administrator Wallet: {admin}")
+            st.info(f"Chief Executive Officer Wallet: {ceo}")
+            st.info(f"Finance Officer Wallet: {finance}")
+
+            if wallet_address:
+                st.success(f"Connected Wallet: {wallet_address}")
+            else:
+                st.warning("No wallet connected.")
+
+    except Exception as e:
+        st.error(f"Unable to load dashboard information: {e}")
+
+# ============================================================
+# MEDICATION INVENTORY
+# ============================================================
+
+elif page == "Medication Inventory":
+
+    st.header("Medication Inventory Management")
+
+    st.subheader("Register New Medication")
+
+    med_name = st.text_input("Medication Name")
+    st.caption("Enter the medication name exactly as it should appear.")
+
+    med_category = st.selectbox(
+        "Illness Category",
+        list(ILLNESS_CATEGORY_LABELS.keys()),
+        format_func=lambda x: ILLNESS_CATEGORY_LABELS[x]
+    )
+
+    initial_stock = st.number_input(
+        "Initial Stock Quantity",
+        min_value=0
+    )
+
+    threshold = st.number_input(
+        "Minimum Stock Threshold",
+        min_value=0
+    )
+
+    reorder_qty = st.number_input(
+        "Automatic Reorder Quantity",
+        min_value=0
+    )
+
+    price_wei = st.number_input(
+        "Medication Price (Wei)",
+        min_value=0
+    )
+
+    supplier = st.text_input("Supplier Wallet Address")
+    st.caption("Enter a valid Ethereum wallet address starting with 0x")
+
+    if st.button("Register Medication"):
+
+        if not wallet_address or not network_ok:
+            st.warning("Please connect MetaMask to Sepolia first.")
+
+        else:
+            try:
+                with st.spinner("Building transaction..."):
+
+                    supplier_address = w3.to_checksum_address(supplier)
+
+                    tx = contract.functions.registerMedication(
+                        med_name,
+                        med_category,
+                        int(initial_stock),
+                        int(threshold),
+                        int(reorder_qty),
+                        int(price_wei),
+                        supplier_address
+                    ).build_transaction({
+                        "from": wallet_address,
+                        "nonce": w3.eth.get_transaction_count(wallet_address),
+                        "chainId": SEPOLIA_CHAIN_ID
                     })
-            if my_orders:
-                st.table(pd.DataFrame(my_orders))
-            else:
-                st.info("No orders assigned to this wallet.")
-        except Exception as e:
-            st.error(f"Error: {e}")
-# --- PAGE: REGISTER MEDICATION (CEO/ADMIN VIEW) ---
-elif page == "💊 Register Medication":
-    st.title("💊 Medication Registry")
-    
-    if current_role in ["CEO", "Admin", "Guest Evaluator"]:
-        st.markdown("### Log New Supply to Ledger")
-        with st.form("med_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                med_name = st.text_input("Medication Name", placeholder="e.g. Tenofovir")
-                med_batch = st.text_input("Batch Number")
-            with col2:
-                med_qty = st.number_input("Initial Stock Quantity", min_value=0)
-                expiry = st.date_input("Expiry Date")
-            
-            submitted = st.form_submit_button("Log to Blockchain")
-            if submitted:
-                if current_role == "Guest Evaluator":
-                    st.warning("Action simulated for demo. In live mode, this requires a MetaMask signature.")
-                else:
-                    st.success(f"Successfully registered {med_name} to the ledger.")
-    else:
-        st.error("Access Denied: Only Admin/CEO roles can register new medication batches.")
 
-# --- PAGE: HOSPITAL ORDERS (HOSPITAL VIEW) ---
-elif page == "🛒 Hospital Orders":
-    st.title("🛒 Hospital Procurement Portal")
-    
-    if current_role in ["Hospital/Clinic", "Guest Evaluator"]:
-        st.subheader("Request Urgent Restock")
-        st.info("When local levels fall below 20%, the Smart Contract triggers a reorder request.")
-        
-        order_item = st.selectbox("Select Medication Needed", ["Insulin", "ART (Tenofovir)", "TB Meds", "Paracetamol"])
-        order_qty = st.slider("Required Units", 100, 5000, 500)
-        
-        if st.button("Place Smart Contract Order"):
-            if current_role == "Guest Evaluator":
-                st.info("Order Broadcast Simulated. Suppliers have been notified via the ledger.")
-            else:
-                st.success("Order live on Sepolia Testnet.")
-    else:
-        st.error("Access Denied: This portal is restricted to Hospital/Clinic Personnel.")
+                    tx_hash = send_transaction(tx)
 
-# --- PAGE: SUPPLIER HUB ---
-elif page == "📦 Supplier Hub":
-    st.title("📦 Supplier Fulfillment Portal")
-    
-    if current_role != "Supplier" and current_role != "Guest Evaluator":
-        st.error("Access Restricted to Verified Suppliers.")
-    else:
-        st.subheader("Incoming Medication Requests")
+                    if tx_hash:
+                        st.success("Medication registered successfully.")
+                        st.markdown(
+                            f"[View Transaction]"
+                            f"({ETHERSCAN_TX_URL}{tx_hash})"
+                        )
+
+            except Exception as e:
+                st.error(f"Registration failed: {e}")
+
+    st.divider()
+
+    st.subheader("Check Medication Information")
+
+    lookup_name = st.text_input("Medication Name Lookup")
+
+    if st.button("Fetch Medication Information"):
+
         try:
-            count = contract.functions.orderCount().call()
-            if count == 0:
-                st.info("No pending orders from Gauteng hospitals at this time.")
-            else:
-                for i in range(1, count + 1):
-                    order = contract.functions.orders(i).call()
-                    # Only show orders assigned to this supplier or 'Created' orders
-                    if order[4].lower() == wallet_address.lower() or order[5] == 0:
-                        with st.expander(f"Order #{order[0]}: {order[1]}"):
-                            st.write(f"**Quantity Required:** {order[2]}")
-                            st.write(f"**Hospital Address:** {order[3]}")
-                            
-                            if order[5] == 0: # 0 = Created/Pending
-                                if st.button(f"Fulfill Order #{order[0]}", key=f"f_{i}"):
-                                    nonce = w3.eth.get_transaction_count(wallet_address)
-                                    # Assuming your contract has a fulfillOrder function
-                                    tx = contract.functions.fulfillOrder(i).build_transaction({
-                                        "from": wallet_address, "nonce": nonce, "chainId": 11155111, "gas": 200000
-                                    })
-                                    tx_json = json.dumps({"from": tx["from"], "to": tx["to"], "data": tx["data"], "gas": hex(tx["gas"])})
-                                    streamlit_js_eval(js_expressions=f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{tx_json}] }});")
-                            else:
-                                st.success("✅ Order Fulfilled")
+            with st.spinner("Fetching medication details..."):
+
+                med = contract.functions.inventory(
+                    lookup_name
+                ).call()
+
+                st.success("Medication Found")
+
+                st.info(f"Medication Name: {med[0]}")
+                st.info(
+                    f"Category: {ILLNESS_CATEGORY_LABELS.get(med[1], 'Unknown')}"
+                )
+                st.info(f"Current Stock: {med[2]}")
+                st.info(f"Minimum Threshold: {med[3]}")
+                st.info(f"Automatic Reorder Quantity: {med[4]}")
+                st.info(f"Unit Price (Wei): {med[5]}")
+                st.info(f"Supplier Wallet: {med[6]}")
+                st.info(f"Active Medication: {med[7]}")
+
         except Exception as e:
-            st.error(f"Blockchain Fetch Error: {e}")
-# --- FOOTER ---
-st.sidebar.markdown("---")
-st.sidebar.caption(f"Eco-Chain | Connected: {current_role}")
+            st.error(f"Unable to fetch medication details: {e}")
+
+# ============================================================
+# MEDICATION ISSUING
+# ============================================================
+
+elif page == "Medication Issuing":
+
+    st.header("Issue Medication to Patients")
+
+    issue_name = st.text_input("Medication Name")
+
+    st.caption(
+        "Enter the exact medication name to reduce stock levels."
+    )
+
+    if st.button("Issue Medication"):
+
+        if not wallet_address or not network_ok:
+            st.warning("Please connect MetaMask to Sepolia first.")
+
+        else:
+            try:
+                with st.spinner("Preparing medication issue transaction..."):
+
+                    tx = contract.functions.issueMedication(
+                        issue_name
+                    ).build_transaction({
+                        "from": wallet_address,
+                        "nonce": w3.eth.get_transaction_count(wallet_address),
+                        "chainId": SEPOLIA_CHAIN_ID
+                    })
+
+                    tx_hash = send_transaction(tx)
+
+                    if tx_hash:
+                        st.success("Medication issued successfully.")
+                        st.markdown(
+                            f"[View Transaction]"
+                            f"({ETHERSCAN_TX_URL}{tx_hash})"
+                        )
+
+            except Exception as e:
+                st.error(f"Unable to issue medication: {e}")
+
+# ============================================================
+# PURCHASE ORDERS
+# ============================================================
+
+elif page == "Purchase Orders":
+
+    st.header("Purchase Order Management")
+
+    st.subheader("Lookup Purchase Order")
+
+    order_lookup = st.number_input(
+        "Purchase Order Number",
+        min_value=0
+    )
+
+    if st.button("Fetch Purchase Order"):
+
+        try:
+            with st.spinner("Fetching purchase order details..."):
+
+                order = contract.functions.getOrderDetails(
+                    int(order_lookup)
+                ).call()
+
+                st.success("Purchase Order Found")
+
+                st.info(f"Order Number: {order[0]}")
+                st.info(f"Medication Name: {order[1]}")
+                st.info(f"Quantity Ordered: {order[2]}")
+                st.info(f"Total Cost (Wei): {order[3]}")
+                st.info(f"Supplier Wallet: {order[4]}")
+                st.info(
+                    f"Order Status: "
+                    f"{ORDER_STATUS_LABELS.get(order[5], 'Unknown')}"
+                )
+
+        except Exception as e:
+            st.error(f"Unable to fetch order details: {e}")
+
+    st.divider()
+
+    st.subheader("Pay and Replenish Stock")
+
+    pay_order_id = st.number_input(
+        "Order Number to Pay",
+        min_value=0,
+        key="pay_order"
+    )
+
+    payment_amount = st.number_input(
+        "Payment Amount (Wei)",
+        min_value=0
+    )
+
+    if st.button("Pay Supplier and Replenish"):
+
+        if not wallet_address or not network_ok:
+            st.warning("Please connect MetaMask to Sepolia first.")
+
+        else:
+            try:
+                with st.spinner("Preparing payment transaction..."):
+
+                    tx = contract.functions.payAndReplenish(
+                        int(pay_order_id)
+                    ).build_transaction({
+                        "from": wallet_address,
+                        "nonce": w3.eth.get_transaction_count(wallet_address),
+                        "chainId": SEPOLIA_CHAIN_ID,
+                        "value": int(payment_amount)
+                    })
+
+                    tx_hash = send_transaction(tx)
+
+                    if tx_hash:
+                        st.success("Payment submitted successfully.")
+                        st.markdown(
+                            f"[View Transaction]"
+                            f"({ETHERSCAN_TX_URL}{tx_hash})"
+                        )
+
+            except Exception as e:
+                st.error(f"Payment failed: {e}")
+
+# ============================================================
+# USER REGISTRATION
+# ============================================================
+
+elif page == "User Registration":
+
+    st.header("User Access Registration")
+
+    role_request = st.selectbox(
+        "Requested Role",
+        list(ROLE_LABELS.keys()),
+        format_func=lambda x: ROLE_LABELS[x]
+    )
+
+    if st.button("Request Access Approval"):
+
+        if not wallet_address or not network_ok:
+            st.warning("Please connect MetaMask to Sepolia first.")
+
+        else:
+            try:
+                with st.spinner("Submitting registration request..."):
+
+                    tx = contract.functions.requestRegistration(
+                        role_request
+                    ).build_transaction({
+                        "from": wallet_address,
+                        "nonce": w3.eth.get_transaction_count(wallet_address),
+                        "chainId": SEPOLIA_CHAIN_ID
+                    })
+
+                    tx_hash = send_transaction(tx)
+
+                    if tx_hash:
+                        st.success("Registration request submitted.")
+                        st.markdown(
+                            f"[View Transaction]"
+                            f"({ETHERSCAN_TX_URL}{tx_hash})"
+                        )
+
+            except Exception as e:
+                st.error(f"Registration request failed: {e}")
+
+# ============================================================
+# ADMINISTRATION
+# ============================================================
+
+elif page == "Administration":
+
+    st.header("Administrative Controls")
+
+    st.subheader("Approve User Registration")
+
+    approve_wallet = st.text_input(
+        "User Wallet Address"
+    )
+
+    st.caption(
+        "Enter the wallet address of the user to approve."
+    )
+
+    if st.button("Approve Registration"):
+
+        if not wallet_address or not network_ok:
+            st.warning("Please connect MetaMask to Sepolia first.")
+
+        else:
+            try:
+                with st.spinner("Preparing approval transaction..."):
+
+                    approve_address = w3.to_checksum_address(
+                        approve_wallet
+                    )
+
+                    tx = contract.functions.approveRegistration(
+                        approve_address
+                    ).build_transaction({
+                        "from": wallet_address,
+                        "nonce": w3.eth.get_transaction_count(wallet_address),
+                        "chainId": SEPOLIA_CHAIN_ID
+                    })
+
+                    tx_hash = send_transaction(tx)
+
+                    if tx_hash:
+                        st.success("User registration approved.")
+                        st.markdown(
+                            f"[View Transaction]"
+                            f"({ETHERSCAN_TX_URL}{tx_hash})"
+                        )
+
+            except Exception as e:
+                st.error(f"Approval failed: {e}")
+
+    st.divider()
+
+    st.subheader("Assign Finance Officer")
+
+    finance_wallet = st.text_input(
+        "New Finance Officer Wallet"
+    )
+
+    st.caption(
+        "Enter a valid Ethereum wallet address starting with 0x"
+    )
+
+    if st.button("Assign Finance Officer"):
+
+        if not wallet_address or not network_ok:
+            st.warning("Please connect MetaMask to Sepolia first.")
+
+        else:
+            try:
+                with st.spinner("Preparing finance officer update..."):
+
+                    finance_address = w3.to_checksum_address(
+                        finance_wallet
+                    )
+
+                    tx = contract.functions.setFinanceOfficer(
+                        finance_address
+                    ).build_transaction({
+                        "from": wallet_address,
+                        "nonce": w3.eth.get_transaction_count(wallet_address),
+                        "chainId": SEPOLIA_CHAIN_ID
+                    })
+
+                    tx_hash = send_transaction(tx)
+
+                    if tx_hash:
+                        st.success("Finance officer updated.")
+                        st.markdown(
+                            f"[View Transaction]"
+                            f"({ETHERSCAN_TX_URL}{tx_hash})"
+                        )
+
+            except Exception as e:
+                st.error(f"Unable to update finance officer: {e}")
