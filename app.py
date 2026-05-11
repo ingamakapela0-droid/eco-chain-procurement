@@ -34,7 +34,7 @@ st.markdown(f"""
     <div class="watermark">ECO-CHAIN SOLUTIONS</div>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (Logo + Menu + Wallet) ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
     try: st.image(LOGO_FILE, use_column_width=True)
     except: st.title("🌿 Eco-Chain")
@@ -81,23 +81,14 @@ if page == "🏠 Overview":
     **Mission:** Eco-Chain Procurement Solutions aims to provide a solution to the abrupt 
     shortage of medication at local clinics and rural hospitals. We act as the bridge 
     between the hospital and pharmaceutical companies.
-    
-    Our app is linked to the healthcare facility dispensary to monitor medication stock levels. 
-    When any medication leaves the dispensary, it is scanned and updated instantly on the digital registry. 
-    Every medication has a 'minimum threshold' assigned; once reached, the system automatically 
-    notifies suppliers to replenish stock before it fully runs out.
     """)
 
 elif page == "📈 Health Insights":
     st.title("📈 Regional Health Trends & Insights")
     
-    st.markdown("""
-    ### Data Strategy & Analysis
-    Eco-Chain identifies high-risk regions that require prioritized supply chain intervention by monitoring 
-    regional health indicators.
-    """)
+    st.markdown("### Data Strategy & Analysis")
+    st.write("Eco-Chain utilizes regional health indicators to automate and prioritize the pharmaceutical supply chain.")
 
-    # --- TABS FOR SUB-CATEGORIES ---
     tab_regions, tab_hiv, tab_tb = st.tabs(["📍 Regional Network", "📊 HIV Statistics", "🫁 TB Statistics"])
 
     with tab_regions:
@@ -105,45 +96,41 @@ elif page == "📈 Health Insights":
         region_map = pd.DataFrame({
             "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
             "Hubs / Areas Covered": [
-                "Diepsloot, Midrand, Lanseria, Fourways",
-                "Randburg, Rosebank, Melville, Northcliff",
-                "Roodepoort, Florida, Bram Fischerville",
-                "Doornkop, Soweto, Dobsonville, Protea Glen",
-                "Alexandra, Wynberg, Sandton, Houghton",
-                "Inner City, Johannesburg South",
-                "Orange Farm, Ennerdale, Lenasia, Eldorado Park"
+                "Diepsloot, Midrand, Fourways", "Randburg, Rosebank, Northcliff",
+                "Roodepoort, Florida, Bram Fischerville", "Soweto, Dobsonville, Protea Glen",
+                "Alexandra, Sandton, Houghton", "Inner City, Johannesburg South",
+                "Orange Farm, Ennerdale, Lenasia"
             ]
         })
         st.table(region_map)
 
     with tab_hiv:
-        st.subheader("HIV Epidemic Trends (2019/20)")
-        hiv_df = pd.DataFrame({
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
-            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
-            "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
-        })
-        st.table(hiv_df)
-        st.caption("Strategic Trigger: High positivity in Region F necessitates priority ART allocation.")
+        st.subheader("HIV Positivity Rate by Region (%)")
+        hiv_chart_data = pd.DataFrame({
+            "Positivity Rate": [5.9, 4.9, 7.1, 5.8, 5.2, 7.8, 6.2]
+        }, index=["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"])
+        st.bar_chart(hiv_chart_data)
+        
+        st.write("Detailed Dataset:")
+        st.table(hiv_chart_data.T)
 
     with tab_tb:
-        st.subheader("TB Treatment Outcomes (2018/19)")
-        tb_df = pd.DataFrame({
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-            "Success Rate": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
-            "Death Rate": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"],
-            "Lost to Follow-up": ["4.8%", "5.5%", "8.2%", "10.9%", "6.7%", "9.6%", "11.0%"]
-        })
-        st.table(tb_df)
-        st.caption("Strategic Trigger: High loss-to-follow-up in Region G requires stock-tracking compliance.")
+        st.subheader("TB Treatment Success vs. Mortality (%)")
+        tb_chart_data = pd.DataFrame({
+            "Success Rate": [89.4, 90.3, 87.5, 80.5, 87.0, 80.7, 81.5],
+            "Death Rate": [5.3, 3.7, 4.3, 7.8, 5.8, 4.0, 7.1]
+        }, index=["Reg A", "Reg B", "Reg C", "Reg D", "Reg E", "Reg F", "Reg G"])
+        st.bar_chart(tb_chart_data)
+        
+        st.write("Detailed Dataset:")
+        st.table(tb_chart_data.T)
 
 elif page == "🛠️ Admin Verification":
     st.title("🛠️ Admin: Identity Verification")
-    target = st.text_input("Entity Wallet Address")
-    if st.button("Authorize Entity on Blockchain"):
+    target = st.text_input("Wallet Address")
+    if st.button("Authorize on Blockchain"):
         record_on_chain(wallet_addr)
-        st.success(f"Verification for {target} recorded.")
+        st.success("Verification recorded.")
 
 elif page == "📋 Hospital Requests":
     st.title("📋 CEO: Pending Hospital Requests")
@@ -167,8 +154,8 @@ elif page == "📦 Supplier Orders":
     st.title("📦 Supplier: Incoming CEO Orders")
     orders = pd.DataFrame({
         "Order ID": ["#TX-9921", "#TX-9925"],
-        "Issued By": ["Eco-Chain CEO", "Eco-Chain CEO"],
-        "Status": ["AUTHORIZED - READY TO SHIP", "AUTHORIZED - READY TO SHIP"]
+        "Medicine": ["Insulin Pen", "ARVs"],
+        "Status": ["AUTHORIZED", "AUTHORIZED"]
     })
     st.table(orders)
     if st.button("Confirm Shipment on Blockchain"):
@@ -177,4 +164,4 @@ elif page == "📦 Supplier Orders":
 
 # --- FOOTER ---
 st.markdown("---")
-st.caption("Eco-Chain Solutions | Blockchain Procurement v13.8")
+st.caption("Eco-Chain Solutions | Blockchain Procurement v13.9")
