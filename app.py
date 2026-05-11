@@ -8,7 +8,7 @@ from streamlit_js_eval import streamlit_js_eval
 try:
     from config import CONTRACT_ADDRESS, CONTRACT_ABI, RPC_URL, ADMIN_ADDR, CEO_ADDR, FIN_OFFICER_ADDR
 except ImportError:
-    st.error("Missing config.py!")
+    st.error("Missing config.py! Ensure it is in the same folder.")
     st.stop()
 
 LOGO_FILE = "logo.png" 
@@ -28,7 +28,7 @@ st.markdown(f"""
     [data-testid="stSidebar"] {{ background-color: #FFFFFF; border-right: 2px solid var(--teal); }}
     .stButton>button {{ 
         background: linear-gradient(135deg, var(--teal), #0F766E); 
-        color: white; border-radius: 12px; font-weight: bold;
+        color: white; border-radius: 12px; font-weight: bold; height: 3.5em;
     }}
     </style>
     <div class="watermark">ECO-CHAIN SOLUTIONS</div>
@@ -48,36 +48,27 @@ with st.sidebar:
     if raw_wallet:
         wallet_addr = Web3.to_checksum_address(raw_wallet)
         st.success(f"Connected: {wallet_addr[:6]}...{wallet_addr[-4:]}")
-        
         if wallet_addr.lower() == ADMIN_ADDR.lower(): user_role = "Admin"
         elif wallet_addr.lower() == CEO_ADDR.lower(): user_role = "CEO"
         elif wallet_addr.lower() == FIN_OFFICER_ADDR.lower(): user_role = "Financial Officer"
         else: user_role = "Supplier / Hospital"
-        
-        st.info(f"Identity: **{user_role}**")
+        st.info(f"Role: **{user_role}**")
     else:
         st.warning("🔒 Wallet Locked")
 
     st.markdown("---")
-    
-    # SYSTEM NAVIGATION
     tabs = ["🏠 Overview", "📈 Health Insights"]
     if user_role == "Admin": tabs += ["🛠️ Admin Verification"]
     if user_role == "CEO": tabs += ["📋 Hospital Requests", "💊 Issue Orders"]
     if user_role == "Supplier / Hospital": tabs += ["📦 Supplier Orders", "💳 Subscriptions"]
-    
     page = st.sidebar.radio("Navigation Menu", tabs)
 
 # --- 4. BLOCKCHAIN ENGINE ---
 def record_on_chain(target_to, data="0x", value_eth=0):
-    """Triggers MetaMask to record the transaction record on Sepolia."""
     nonce = w3.eth.get_transaction_count(wallet_addr)
     tx_params = {
-        "from": wallet_addr,
-        "to": target_to,
-        "value": hex(w3.to_wei(value_eth, 'ether')),
-        "nonce": hex(nonce),
-        "chainId": "0xaa36a7" 
+        "from": wallet_addr, "to": target_to, "value": hex(w3.to_wei(value_eth, 'ether')),
+        "nonce": hex(nonce), "chainId": "0xaa36a7" 
     }
     js_code = f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{json.dumps(tx_params)}] }});"
     streamlit_js_eval(js_expressions=js_code)
@@ -86,19 +77,66 @@ def record_on_chain(target_to, data="0x", value_eth=0):
 
 if page == "🏠 Overview":
     st.title("🏥 Eco-Chain | Regional Logistics")
-    st.info("**Mission:** Bridging the gap between Hospital Demand and Supplier Fulfillment via Blockchain Transparency.")
+    st.info("""
+    **Mission:** Eco-Chain Procurement Solutions aims to provide a solution to the abrupt 
+    shortage of medication at local clinics and rural hospitals. We will be the bridge 
+    between the hospital and pharmaceutical companies.
     
+    Our app is linked to the hospital or clinic we’re working with and it will monitor 
+    the medication stock levels. When any medication leaves the dispensary, it will 
+    be scanned by whoever is issuing the medication and this will show on the app. 
+    
+    All medication will have a minimum number that is allowed to be left in the 
+    dispensary and once it reaches that minimum, the system will notify the suppliers 
+    and the medication will be sent to the clinic or hospital before it fully runs out. 
+    """)
+
+elif page == "📈 Health Insights":
+    st.title("📈 Regional Health Trends & Insights")
+    
+    # NEW: REGIONS TABLE
+    st.subheader("📍 City of Johannesburg: Regional Network")
+    region_map = pd.DataFrame({
+        "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+        "Hubs / Areas Covered": [
+            "Diepsloot, Midrand, Lanseria, Fourways",
+            "Randburg, Rosebank, Melville, Northcliff",
+            "Roodepoort, Florida, Bram Fischerville",
+            "Doornkop, Soweto, Dobsonville, Protea Glen",
+            "Alexandra, Wynberg, Sandton, Houghton",
+            "Inner City, Johannesburg South",
+            "Orange Farm, Ennerdale, Lenasia, Eldorado Park"
+        ]
+    })
+    st.table(region_map)
+
+    # HIV DATA
+    st.subheader("📊 HIV Epidemic Trends (2019/20)")
+    hiv_df = pd.DataFrame({
+        "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+        "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+        "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
+    })
+    st.table(hiv_df)
+
+    # TB DATA
+    st.subheader("🫁 TB Treatment Outcomes (2018/19)")
+    tb_df = pd.DataFrame({
+        "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+        "Success Rate": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
+        "Death Rate": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"]
+    })
+    st.table(tb_df)
+
 elif page == "🛠️ Admin Verification":
     st.title("🛠️ Admin: Identity Verification")
-    target = st.text_input("Entity Wallet Address to Verify")
+    target = st.text_input("Entity Wallet Address")
     if st.button("Authorize Entity on Blockchain"):
-        record_on_chain(wallet_addr) # Records the verification action
-        st.success(f"Verification for {target} recorded on the ledger.")
+        record_on_chain(wallet_addr)
+        st.success(f"Verification for {target} recorded.")
 
 elif page == "📋 Hospital Requests":
     st.title("📋 CEO: Pending Hospital Requests")
-    st.write("The following hospitals have requested stock. Review and issue orders.")
-    # Mock data showing what the CEO sees
     reqs = pd.DataFrame({
         "Hospital": ["Chris Hani Baragwanath", "Charlotte Maxeke"],
         "Medicine": ["Insulin", "Paracetamol"],
@@ -110,26 +148,23 @@ elif page == "💊 Issue Orders":
     st.title("💊 CEO: Authorize Supplier Order")
     with st.container(border=True):
         med = st.text_input("Medication Name")
-        supplier = st.text_input("Supplier Address (Target)")
-        if st.button("Record Authorized Order on Blockchain"):
+        supplier = st.text_input("Supplier Address")
+        if st.button("Record Authorized Order"):
             record_on_chain(wallet_addr)
-            st.success(f"Order for {med} has been transmitted to Supplier Ledger.")
+            st.success(f"Order for {med} transmitted.")
 
 elif page == "📦 Supplier Orders":
     st.title("📦 Supplier: Incoming CEO Orders")
-    st.write("Authorized orders issued by the CEO awaiting fulfillment.")
-    # Mock data showing what the Supplier sees
     orders = pd.DataFrame({
         "Order ID": ["#TX-9921", "#TX-9925"],
         "Issued By": ["Eco-Chain CEO", "Eco-Chain CEO"],
-        "Medicine": ["Insulin Pen", "ARVs"],
         "Status": ["AUTHORIZED - READY TO SHIP", "AUTHORIZED - READY TO SHIP"]
     })
     st.table(orders)
-    if st.button("Record Shipment on Blockchain"):
+    if st.button("Confirm Shipment on Blockchain"):
         record_on_chain(wallet_addr)
-        st.success("Shipment status recorded on-chain.")
+        st.success("Shipment status recorded.")
 
 # --- FOOTER ---
 st.markdown("---")
-st.caption("Eco-Chain Solutions | Blockchain Procurement v13.0")
+st.caption("Eco-Chain Solutions | Blockchain Procurement v13.6")
