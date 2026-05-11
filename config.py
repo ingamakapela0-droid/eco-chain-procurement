@@ -1,14 +1,18 @@
 # config.py
 
-# 1. CORE PERSONNEL WALLET ADDRESSES
+# CORE PERSONNEL (Must match your MetaMask addresses)
 ADMIN_ADDR = "0xe367800E0cEcCC2A7d5aCedd42d80b194A9381Ed"
 CEO_ADDR = "0xc2ABbFb05C6868Daf749F2ed037a66acC9e6fc07"
+FIN_OFFICER_ADDR = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e" # Example FO address
 
-# 2. PUBLIC BLOCKCHAIN GATEWAY (Free & Reliable)
+# PUBLIC GATEWAY
 RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com" 
 
-# Your Deployed Contract Address
+# CONTRACT DATA
 CONTRACT_ADDRESS = "0x29382A813A37b35bA9B3273aD8aD888e05944A0e"
+CONTRACT_ABI = [
+    # ... (Keep the ABI from the previous code block)
+]
 
 # 3. SMART CONTRACT ABI
 CONTRACT_ABI = [
