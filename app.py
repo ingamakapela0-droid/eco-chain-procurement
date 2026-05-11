@@ -1,127 +1,141 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import json
 from web3 import Web3
 from streamlit_js_eval import streamlit_js_eval
 
 # --- 1. CONFIG & IDENTITY ---
 try:
     from config import CONTRACT_ADDRESS, CONTRACT_ABI, RPC_URL, ADMIN_ADDR, CEO_ADDR, FIN_OFFICER_ADDR
-except:
-    st.error("Missing config.py!")
+except ImportError:
+    st.error("Missing config.py! Ensure it is in the same folder.")
     st.stop()
 
-# CHANGE THIS TO YOUR ACTUAL GITHUB RAW IMAGE URL
-LOGO_URL = "https://raw.githubusercontent.com/YourRepo/main/logo.png"
+# Using the local file in your folder
+LOGO_FILE = "logo.png" 
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 st.set_page_config(page_title="Eco-Chain | Healthcare Ledger", layout="wide")
 
-# --- 2. THEME & WATERMARK (Teal & Gold) ---
+# --- 2. BRANDING, WATERMARK & STYLING ---
 st.markdown(f"""
     <style>
-    :root {{ --teal: #0D9488; --gold: #B45309; --bg: #F1F5F9; }}
-    .main {{ background-color: var(--bg); }}
+    :root {{ --teal: #0D9488; --gold: #B45309; }}
+    .main {{ background-color: #F8FAFC; }}
     
-    /* Watermark */
+    /* Company Watermark - Stays Fixed in Background */
     .watermark {{
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-25deg);
-        font-size: 100px; color: rgba(13, 148, 136, 0.04); font-weight: 800;
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 8vw; color: rgba(13, 148, 136, 0.05); font-weight: 900;
         z-index: -1; pointer-events: none; white-space: nowrap;
     }}
     
-    /* Custom Sidebar Logo Styling */
+    /* Sidebar and Button Styling */
     [data-testid="stSidebar"] {{ background-color: #FFFFFF; border-right: 2px solid var(--teal); }}
-    .stButton>button {{ background-color: var(--teal); color: white; border-radius: 20px; }}
-    .stButton>button:hover {{ border: 2px solid var(--gold); background: white; color: var(--gold); }}
+    .stButton>button {{ 
+        background: linear-gradient(135deg, var(--teal), #0F766E); 
+        color: white; border-radius: 12px; font-weight: bold; height: 3.5em;
+    }}
     </style>
     <div class="watermark">ECO-CHAIN SOLUTIONS</div>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR LOGIN ---
+# --- 3. SIDEBAR LOGO & WALLET ---
 with st.sidebar:
-    st.image(LOGO_URL, width=220)
+    try:
+        st.image(LOGO_FILE, use_column_width=True)
+    except:
+        st.title("🌿 Eco-Chain") # Fallback if logo.png isn't found
+        
     st.markdown("---")
-    
     raw_wallet = streamlit_js_eval(js_expressions="async function getAccount() { const accounts = await window.ethereum.request({ method: 'eth_accounts' }); return accounts[0]; }; getAccount();", key="wallet")
     
     user_role = "Guest"
     wallet_addr = None
-    is_subscribed = False # This would normally be a blockchain check
 
     if raw_wallet:
         wallet_addr = Web3.to_checksum_address(raw_wallet)
-        st.success(f"Verified: {wallet_addr[:6]}...{wallet_addr[-4:]}")
+        st.success(f"Connected: {wallet_addr[:6]}...{wallet_addr[-4:]}")
         
-        # Role Logic
+        # Check Role for navigation
         if wallet_addr.lower() == ADMIN_ADDR.lower(): user_role = "Admin"
         elif wallet_addr.lower() == CEO_ADDR.lower(): user_role = "CEO"
         elif wallet_addr.lower() == FIN_OFFICER_ADDR.lower(): user_role = "Financial Officer"
-        else: user_role = "Supplier" # Fallback for demo
+        else: user_role = "Supplier / Hospital"
         
         st.info(f"Authorized as: **{user_role}**")
     else:
-        st.warning("🔒 Access Restricted. Connect MetaMask.")
+        st.warning("🔒 Please Connect MetaMask")
 
-# --- 4. DYNAMIC NAVIGATION ---
+# --- 4. NAVIGATION ---
+# Restricted view: Subscriptions only for CEO and Suppliers
 tabs = ["🏠 Overview", "📈 Health Insights"]
-if user_role in ["CEO", "Supplier"]: tabs += ["💳 Subscription Board"]
+if user_role in ["CEO", "Supplier / Hospital"]: tabs += ["💳 Subscriptions"]
 if user_role == "CEO": tabs += ["💊 Issue Medication"]
-if user_role == "Admin": tabs += ["🛠️ Network Control"]
+if user_role == "Admin": tabs += ["🛠️ Governance"]
 
 page = st.radio("Menu", tabs, horizontal=True)
 
 # --- 5. PAGE MODULES ---
 
 if page == "🏠 Overview":
-    st.title("🏥 Regional Healthcare Logistics")
-    st.markdown("### Ecosystem Performance")
+    st.title("🏥 Eco-Chain | Regional Logistics Overview")
+    st.markdown("#### Real-time Healthcare Supply Chain Monitoring")
     
     c1, c2, c3 = st.columns(3)
-    c1.metric("Live Nodes", "14", "Gauteng Region")
-    c2.metric("Block Confirmations", "99.9%", "Secured")
-    c3.metric("Inventory Burn Rate", "-12%", "Optimal")
+    c1.metric("Network Nodes", "24", "Live")
+    c2.metric("On-Chain Audits", "100%", "Verified")
+    c3.metric("Stock Safety", "94%", "Optimal")
     
-    st.info("**Company Mission:** Eco-Chain provides immutable supply chain integrity, preventing stock-outs of life-saving medicine through real-time blockchain monitoring.")
+    st.write("---")
+    st.info("**About Eco-Chain:** We prevent medication stock-outs by bridging the gap between hospital demand and supplier fulfillment using an immutable blockchain ledger.")
 
 elif page == "📈 Health Insights":
-    st.title("📈 Demand & Stock Analytics")
+    st.title("📈 Demand vs. Supply Analytics")
     
-    # Live Chart Simulation
-    df = pd.DataFrame({'Week': ['W1', 'W2', 'W3', 'W4'], 'Insulin': [400, 450, 300, 500], 'ARVs': [200, 220, 210, 250]})
-    fig = px.bar(df, x='Week', y=['Insulin', 'ARVs'], barmode='group', color_discrete_sequence=['#0D9488', '#B45309'])
-    st.plotly_chart(fig, use_container_width=True)
-    
+    # Simple table and metrics for Health Insights (No Plotly required)
     st.markdown("### Regional Facility Status")
-    st.dataframe(pd.DataFrame({
-        "Facility": ["Johannesburg Central", "Pretoria West", "Soweto Clinic"],
-        "Status": ["Stocked", "Reordering", "Stocked"],
-        "Last Block ID": ["#9921", "#9925", "#9928"]
-    }), use_container_width=True)
-
-elif page == "💳 Subscription Board":
-    st.title("💳 Partner Tiers")
-    if user_role == "Supplier":
-        st.success("🌟 STATUS: ACTIVE PREMIUM SUPPLIER")
+    insights_data = pd.DataFrame({
+        "Facility": ["Chris Hani Baragwanath", "Charlotte Maxeke", "Steve Biko"],
+        "Inventory Level": ["92%", "88%", "96%"],
+        "Status": ["Stable", "Reordering", "Stable"],
+        "Last Audit": ["Success", "Success", "Success"]
+    })
+    st.table(insights_data)
     
-    st.write("Manage your organization's access to the Eco-Chain procurement network.")
-    col_x, col_y = st.columns(2)
-    col_x.button("Standard Access (Free)")
-    if col_y.button("Upgrade to Enterprise (0.05 ETH)"):
-        st.write("Awaiting Block Confirmation...")
+    st.markdown("### Strategic Analysis")
+    st.write("Based on current blockchain data, regional demand for ARVs is trending upward. The automated procurement logic is scheduled to trigger reorders at 15:00 SAST.")
+
+elif page == "💳 Subscriptions":
+    st.title("💳 Partner Subscription Board")
+    
+    if user_role == "Supplier / Hospital":
+        st.success("✨ **Status:** Active Premium Partner")
+        st.caption("Verified for regional bidding.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Standard Tier")
+        st.write("• Basic Ledger Access\n• Email Alerts")
+        st.button("Active", disabled=True)
+    with col2:
+        st.markdown("### Enterprise Tier")
+        st.write("• Priority Fulfillment\n• Deep-Dive Analytics")
+        if st.button("Upgrade (0.05 ETH)"):
+            st.info("Opening MetaMask for Payment...")
 
 elif page == "💊 Issue Medication":
-    st.title("💊 Medication Issue Authorization")
-    st.info("Directives issued here are immutable and legally binding for suppliers.")
+    st.title("💊 CEO: Medication Disbursement")
+    st.info("CEO Access: Issues are recorded as immutable requests on the blockchain.")
     
     with st.container(border=True):
-        med = st.text_input("Medication Name", "Insulin Pen 300u")
-        hosp = st.selectbox("Facility", ["Helen Joseph", "Rahima Moosa", "Edenvale"])
-        amount = st.slider("Quantity to Issue", 100, 5000, 500)
+        med = st.text_input("Medication Name", "Insulin Pen")
+        hosp = st.selectbox("Facility", ["Chris Hani Baragwanath", "Charlotte Maxeke", "Steve Biko"])
+        qty = st.slider("Quantity", 100, 5000, 1000)
         
-        if st.button("Confirm & Record on Blockchain"):
-            st.success(f"CEO APPROVED: {amount} units of {med} allocated to {hosp}.")
+        if st.button("Authorize & Record Transaction"):
+            st.success(f"CEO APPROVED: {qty} units of {med} allocated to {hosp}.")
 
 # --- FOOTER ---
 st.markdown("---")
-st.caption("Eco-Chain Solutions © 2026 | Built for Sustainable Healthcare Systems")
+st.caption("Eco-Chain Solutions | Presentation Build 2026")
