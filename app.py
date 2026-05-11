@@ -57,11 +57,11 @@ with st.sidebar:
         st.warning("🔒 Wallet Locked")
 
     st.markdown("---")
-    tabs = ["🏠 Overview", "📈 Health Insights"]
-    if user_role == "Admin": tabs += ["🛠️ Admin Verification"]
-    if user_role == "CEO": tabs += ["📋 Hospital Requests", "💊 Issue Orders"]
-    if user_role == "Supplier / Hospital": tabs += ["📦 Supplier Orders", "💳 Subscriptions"]
-    page = st.sidebar.radio("Navigation Menu", tabs)
+    tabs_nav = ["🏠 Overview", "📈 Health Insights"]
+    if user_role == "Admin": tabs_nav += ["🛠️ Admin Verification"]
+    if user_role == "CEO": tabs_nav += ["📋 Hospital Requests", "💊 Issue Orders"]
+    if user_role == "Supplier / Hospital": tabs_nav += ["📦 Supplier Orders", "💳 Subscriptions"]
+    page = st.sidebar.radio("Navigation Menu", tabs_nav)
 
 # --- 4. BLOCKCHAIN ENGINE ---
 def record_on_chain(target_to, data="0x", value_eth=0):
@@ -79,54 +79,64 @@ if page == "🏠 Overview":
     st.title("🏥 Eco-Chain | Regional Logistics")
     st.info("""
     **Mission:** Eco-Chain Procurement Solutions aims to provide a solution to the abrupt 
-    shortage of medication at local clinics and rural hospitals. We will be the bridge 
+    shortage of medication at local clinics and rural hospitals. We act as the bridge 
     between the hospital and pharmaceutical companies.
     
-    Our app is linked to the hospital or clinic we’re working with and it will monitor 
-    the medication stock levels. When any medication leaves the dispensary, it will 
-    be scanned by whoever is issuing the medication and this will show on the app. 
-    
-    All medication will have a minimum number that is allowed to be left in the 
-    dispensary and once it reaches that minimum, the system will notify the suppliers 
-    and the medication will be sent to the clinic or hospital before it fully runs out. 
+    Our app is linked to the healthcare facility dispensary to monitor medication stock levels. 
+    When any medication leaves the dispensary, it is scanned and updated instantly on the digital registry. 
+    Every medication has a 'minimum threshold' assigned; once reached, the system automatically 
+    notifies suppliers to replenish stock before it fully runs out.
     """)
 
 elif page == "📈 Health Insights":
     st.title("📈 Regional Health Trends & Insights")
     
-    # NEW: REGIONS TABLE
-    st.subheader("📍 City of Johannesburg: Regional Network")
-    region_map = pd.DataFrame({
-        "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-        "Hubs / Areas Covered": [
-            "Diepsloot, Midrand, Lanseria, Fourways",
-            "Randburg, Rosebank, Melville, Northcliff",
-            "Roodepoort, Florida, Bram Fischerville",
-            "Doornkop, Soweto, Dobsonville, Protea Glen",
-            "Alexandra, Wynberg, Sandton, Houghton",
-            "Inner City, Johannesburg South",
-            "Orange Farm, Ennerdale, Lenasia, Eldorado Park"
-        ]
-    })
-    st.table(region_map)
+    st.markdown("""
+    ### Data Strategy & Analysis
+    Eco-Chain identifies high-risk regions that require prioritized supply chain intervention by monitoring 
+    regional health indicators.
+    """)
 
-    # HIV DATA
-    st.subheader("📊 HIV Epidemic Trends (2019/20)")
-    hiv_df = pd.DataFrame({
-        "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-        "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
-        "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
-    })
-    st.table(hiv_df)
+    # --- TABS FOR SUB-CATEGORIES ---
+    tab_regions, tab_hiv, tab_tb = st.tabs(["📍 Regional Network", "📊 HIV Statistics", "🫁 TB Statistics"])
 
-    # TB DATA
-    st.subheader("🫁 TB Treatment Outcomes (2018/19)")
-    tb_df = pd.DataFrame({
-        "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-        "Success Rate": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
-        "Death Rate": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"]
-    })
-    st.table(tb_df)
+    with tab_regions:
+        st.subheader("City of Johannesburg: Regional Mapping")
+        region_map = pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Hubs / Areas Covered": [
+                "Diepsloot, Midrand, Lanseria, Fourways",
+                "Randburg, Rosebank, Melville, Northcliff",
+                "Roodepoort, Florida, Bram Fischerville",
+                "Doornkop, Soweto, Dobsonville, Protea Glen",
+                "Alexandra, Wynberg, Sandton, Houghton",
+                "Inner City, Johannesburg South",
+                "Orange Farm, Ennerdale, Lenasia, Eldorado Park"
+            ]
+        })
+        st.table(region_map)
+
+    with tab_hiv:
+        st.subheader("HIV Epidemic Trends (2019/20)")
+        hiv_df = pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Tests Done": [317521, 109163, 197739, 467579, 178975, 270464, 305062],
+            "Positive Results": [18718, 5358, 13994, 27067, 9290, 21197, 18773],
+            "Positivity Rate": ["5.9%", "4.9%", "7.1%", "5.8%", "5.2%", "7.8%", "6.2%"]
+        })
+        st.table(hiv_df)
+        st.caption("Strategic Trigger: High positivity in Region F necessitates priority ART allocation.")
+
+    with tab_tb:
+        st.subheader("TB Treatment Outcomes (2018/19)")
+        tb_df = pd.DataFrame({
+            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
+            "Success Rate": ["89.4%", "90.3%", "87.5%", "80.5%", "87.0%", "80.7%", "81.5%"],
+            "Death Rate": ["5.3%", "3.7%", "4.3%", "7.8%", "5.8%", "4.0%", "7.1%"],
+            "Lost to Follow-up": ["4.8%", "5.5%", "8.2%", "10.9%", "6.7%", "9.6%", "11.0%"]
+        })
+        st.table(tb_df)
+        st.caption("Strategic Trigger: High loss-to-follow-up in Region G requires stock-tracking compliance.")
 
 elif page == "🛠️ Admin Verification":
     st.title("🛠️ Admin: Identity Verification")
@@ -167,4 +177,4 @@ elif page == "📦 Supplier Orders":
 
 # --- FOOTER ---
 st.markdown("---")
-st.caption("Eco-Chain Solutions | Blockchain Procurement v13.6")
+st.caption("Eco-Chain Solutions | Blockchain Procurement v13.8")
