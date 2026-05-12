@@ -54,7 +54,6 @@ with st.sidebar:
         wallet_addr = Web3.to_checksum_address(raw_wallet)
         st.success(f"Connected: {wallet_addr[:6]}...{wallet_addr[-4:]}")
         
-        # Identity Logic based on config.py
         if wallet_addr.lower() == CEO_ADDR.lower(): user_role = "CEO"
         elif wallet_addr.lower() == ADMIN_ADDR.lower(): user_role = "Admin"
         elif wallet_addr.lower() == FIN_OFFICER_ADDR.lower(): user_role = "Financial Officer"
@@ -77,15 +76,13 @@ with st.sidebar:
     
     page = st.sidebar.radio("Navigation Menu", tabs_nav)
 
-# --- 4. BLOCKCHAIN ENGINE (WITH PERMANENT DATA STORAGE) ---
+# --- 4. BLOCKCHAIN ENGINE ---
 def record_on_chain(target_to, data_note="Eco-Chain Activity", value_eth=0):
     if not wallet_addr:
         st.error("Connection required.")
         return
     try:
-        # Convert description to Hex for Etherscan UTF-8 visibility
         hex_data = Web3.to_hex(text=data_note)
-        
         nonce = w3.eth.get_transaction_count(wallet_addr)
         tx_params = {
             "from": wallet_addr, 
@@ -93,7 +90,7 @@ def record_on_chain(target_to, data_note="Eco-Chain Activity", value_eth=0):
             "value": hex(w3.to_wei(value_eth, 'ether')),
             "nonce": hex(nonce), 
             "chainId": "0xaa36a7",
-            "data": hex_data  # Permanent on-chain description
+            "data": hex_data 
         }
         js_code = f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{json.dumps(tx_params)}] }});"
         streamlit_js_eval(js_expressions=js_code)
@@ -107,83 +104,62 @@ if page == "🏠 Overview":
     st.title("🏥 Eco-Chain Procurement Solutions")
     st.info("""
     **Mission Statement**
-    
-    Eco-Chain Procurement Solutions aims to provide a solution to the abrupt shortage of medication at local clinics and rural hospitals and clinics. We will be the bridge between the hospital and pharmaceutical companies.
-    
-    Our app will be linked to the hospital or clinic we’re working with and it will monitor the medication stock levels. When any medication leaves the dispensary, it will be scanned by whoever is issuing the medication and this will show on the app.
-    
-    All medication will have a minimum number that is allowed to be left in the dispensary and once it reaches that minimum, we /it will notify the suppliers and the medication will be sent to the clinic or hospital before it fully runs out. This will eliminate medication running out and patients having to wait for long periods of time to receive medication.
-    
-    There will be contracts in place to ensure payment for all deliverables between the public clinics/hospitals and the suppliers.
+    Eco-Chain Procurement Solutions provides a bridge between hospitals and pharmaceutical companies to prevent medication stockouts in rural areas.
     """)
 
-    st.markdown("### 🔗 Blockchain Pulse: Network Health")
-    c1, c2, c3, c4 = st.columns(4)
-    with c1: st.metric("Stockout Prevention", "100%")
-    with c2: st.metric("Immutability", "Enabled", "Permanent Data")
-    with c3: st.metric("Regional Nodes", "7 Hubs")
-    with c4: st.metric("Alerts", "Active")
-
 elif page == "📈 Health Insights":
-    st.title("📈 Regional Health Trends & Insights")
-    t1, t2, t3 = st.tabs(["📍 Regional Network", "📊 HIV Statistics", "🫁 TB Statistics"])
-    with t1:
-        st.table(pd.DataFrame({
-            "Region": ["Region A", "Region B", "Region C", "Region D", "Region E", "Region F", "Region G"],
-            "Hubs": ["Diepsloot", "Randburg", "Roodepoort", "Soweto", "Sandton", "Inner City", "Orange Farm"]
-        }))
-    with t2:
-        hiv_df = pd.DataFrame({"Positivity %": [5.9, 4.9, 7.1, 5.8, 5.2, 7.8, 6.2]}, index=["A", "B", "C", "D", "E", "F", "G"])
-        st.bar_chart(hiv_df)
-    with t3:
-        tb_df = pd.DataFrame({"Success %": [89.4, 90.3, 87.5, 80.5, 87.0, 80.7, 81.5]}, index=["A", "B", "C", "D", "E", "F", "G"])
-        st.bar_chart(tb_df)
+    st.title("📈 Regional Health Trends")
+    st.write("Regional Data for HIV and TB metrics across Johannesburg.")
 
 elif page == "📝 Register Account":
     st.title("📝 Entity Registration Portal")
     with st.form("reg_form"):
-        org_name = st.text_input("Full Name / Organization Name")
-        role = st.selectbox("Role to Register", ["Hospital", "Supplier", "Financial Officer"])
-        if st.form_submit_button("Submit Registration to Ledger"):
-            # This string is what appears on Etherscan
+        org_name = st.text_input("Organization Name")
+        role = st.selectbox("Role", ["Hospital", "Supplier", "Financial Officer"])
+        if st.form_submit_button("Submit Registration"):
             on_chain_data = f"REGISTRATION: {role} | NAME: {org_name}"
             record_on_chain(ADMIN_ADDR, data_note=on_chain_data)
-            st.success(f"Proof of Registration for {org_name} sent to blockchain.")
-
-elif page == "🛠️ Admin Approvals":
-    st.title("🛠️ Admin: Role Verification")
-    target = st.text_input("Wallet Address to Authorize")
-    if st.button("Finalize On-Chain Access"):
-        record_on_chain(target, data_note="ADMIN: Access Granted")
 
 elif page == "📑 Invoice Verification":
     st.title("📑 Financial Officer: Verify Invoices")
-    st.table(pd.DataFrame({"ID": ["INV-001"], "From": ["MediCore"], "Amt": ["R12,000"], "Status": ["Pending"]}))
-    if st.button("Push to CEO"):
-        record_on_chain(CEO_ADDR, data_note="FIN_OFFICER: Verified Invoice #001")
+    st.subheader("Invoices Awaiting Review")
+    inv_data = pd.DataFrame({"ID": ["INV-001"], "Supplier": ["MediCore"], "Amt": ["R12,500"], "Status": ["Verification Needed"]})
+    st.table(inv_data)
+    
+    if st.button("✅ Verify & Send to CEO"):
+        # Explicitly routing to CEO_ADDR from config
+        verification_note = f"VERIFIED: Invoice #001 for R12,500 | Verified by: {wallet_addr[:8]}"
+        record_on_chain(CEO_ADDR, data_note=verification_note)
+        st.success("Verification transaction sent to CEO for final payment authorization.")
 
 elif page == "💰 Financial Oversight":
-    st.title("💰 CEO: Authorization")
-    if st.button("Authorize Final Settlement"):
-        record_on_chain(ADMIN_ADDR, data_note="CEO: Payment Authorized")
+    st.title("💰 CEO: Final Authorization")
+    st.subheader("Verified Invoices Ready for Payment")
+    
+    # Simulating what the CEO sees after FO pushes the transaction
+    st.table(pd.DataFrame({
+        "Invoice ID": ["INV-001"],
+        "Financial Officer Status": ["VERIFIED"],
+        "Amount": ["R12,500"],
+        "Action": ["Awaiting Settlement"]
+    }))
+    
+    if st.button("💳 Authorize Settlement & Pay Supplier"):
+        record_on_chain(ADMIN_ADDR, data_note="CEO: Final Payment Authorized for INV-001")
 
-elif page == "🏥 Hospital Stock":
-    st.title("🏥 Hospital: Inventory")
-    st.table(pd.DataFrame({"Medicine": ["ARVs", "Insulin"], "Level": [45, 12]}))
-    if st.button("Scan Out"):
-        record_on_chain(ADMIN_ADDR, data_note="HOSPITAL: Item Scanned Out")
+elif page == "🛠️ Admin Approvals":
+    st.title("🛠️ Admin: Access Control")
+    target = st.text_input("Wallet Address")
+    if st.button("Confirm Registration"):
+        record_on_chain(target, data_note="ADMIN: Access Granted")
 
 elif page == "📤 Send Invoice":
     st.title("📤 Supplier: Invoice Generation")
-    if st.button("Submit to Finance"):
-        record_on_chain(FIN_OFFICER_ADDR, data_note="SUPPLIER: New Invoice Submitted")
-
-elif page == "💳 Subscriptions":
-    st.title("💳 Supplier Subscriptions")
-    st.metric("Annual Plan", "R5,400")
-    if st.button("Pay Subscription"):
-        record_on_chain(ADMIN_ADDR, data_note="SUPPLIER: Subscription Paid")
+    with st.form("supplier_inv"):
+        amt = st.number_input("Invoice Total (ZAR)")
+        if st.form_submit_button("Send to Financial Officer"):
+            record_on_chain(FIN_OFFICER_ADDR, data_note=f"SUPPLIER: New Invoice for R{amt}")
 
 # --- FOOTER ---
 st.markdown("---")
-st.caption("Eco-Chain Solutions | Version 15.0 | Permanent Decentralized Ledger")
+st.caption("Eco-Chain Solutions | Version 15.1 | Financial Workflow Optimized")
