@@ -54,7 +54,7 @@ with st.sidebar:
         wallet_addr = Web3.to_checksum_address(raw_wallet)
         st.success(f"Connected: {wallet_addr[:6]}...{wallet_addr[-4:]}")
         
-        # Identity Logic
+        # Identity Logic based on config.py
         if wallet_addr.lower() == CEO_ADDR.lower(): user_role = "CEO"
         elif wallet_addr.lower() == ADMIN_ADDR.lower(): user_role = "Admin"
         elif wallet_addr.lower() == FIN_OFFICER_ADDR.lower(): user_role = "Financial Officer"
@@ -66,7 +66,6 @@ with st.sidebar:
     st.markdown("---")
     tabs_nav = ["🏠 Overview", "📈 Health Insights"]
     
-    # Registration logic including the Financial Officer
     if user_role == "Unregistered":
         tabs_nav += ["📝 Register Account"]
     else:
@@ -78,19 +77,27 @@ with st.sidebar:
     
     page = st.sidebar.radio("Navigation Menu", tabs_nav)
 
-# --- 4. BLOCKCHAIN ENGINE ---
-def record_on_chain(target_to, value_eth=0):
+# --- 4. BLOCKCHAIN ENGINE (WITH PERMANENT DATA STORAGE) ---
+def record_on_chain(target_to, data_note="Eco-Chain Activity", value_eth=0):
     if not wallet_addr:
         st.error("Connection required.")
         return
     try:
+        # Convert description to Hex for Etherscan UTF-8 visibility
+        hex_data = Web3.to_hex(text=data_note)
+        
         nonce = w3.eth.get_transaction_count(wallet_addr)
         tx_params = {
-            "from": wallet_addr, "to": target_to, "value": hex(w3.to_wei(value_eth, 'ether')),
-            "nonce": hex(nonce), "chainId": "0xaa36a7" 
+            "from": wallet_addr, 
+            "to": target_to, 
+            "value": hex(w3.to_wei(value_eth, 'ether')),
+            "nonce": hex(nonce), 
+            "chainId": "0xaa36a7",
+            "data": hex_data  # Permanent on-chain description
         }
         js_code = f"window.ethereum.request({{ method: 'eth_sendTransaction', params: [{json.dumps(tx_params)}] }});"
         streamlit_js_eval(js_expressions=js_code)
+        st.info(f"Broadcasted to Ledger: {data_note}")
     except Exception as e:
         st.error(f"TX Failed: {e}")
 
@@ -98,7 +105,6 @@ def record_on_chain(target_to, value_eth=0):
 
 if page == "🏠 Overview":
     st.title("🏥 Eco-Chain Procurement Solutions")
-    # Restored Mission Statement
     st.info("""
     **Mission Statement**
     
@@ -113,10 +119,10 @@ if page == "🏠 Overview":
 
     st.markdown("### 🔗 Blockchain Pulse: Network Health")
     c1, c2, c3, c4 = st.columns(4)
-    with c1: st.metric("Stockout Prevention", "100%", "Target")
-    with c2: st.metric("Smart Contracts", "Verified", "On-Chain")
-    with c3: st.metric("Regional Nodes", "7 Hubs", "Online")
-    with c4: st.metric("Automated Alerts", "Active", "Live")
+    with c1: st.metric("Stockout Prevention", "100%")
+    with c2: st.metric("Immutability", "Enabled", "Permanent Data")
+    with c3: st.metric("Regional Nodes", "7 Hubs")
+    with c4: st.metric("Alerts", "Active")
 
 elif page == "📈 Health Insights":
     st.title("📈 Regional Health Trends & Insights")
@@ -129,55 +135,55 @@ elif page == "📈 Health Insights":
     with t2:
         hiv_df = pd.DataFrame({"Positivity %": [5.9, 4.9, 7.1, 5.8, 5.2, 7.8, 6.2]}, index=["A", "B", "C", "D", "E", "F", "G"])
         st.bar_chart(hiv_df)
-        st.table(hiv_df.T)
     with t3:
         tb_df = pd.DataFrame({"Success %": [89.4, 90.3, 87.5, 80.5, 87.0, 80.7, 81.5]}, index=["A", "B", "C", "D", "E", "F", "G"])
         st.bar_chart(tb_df)
-        st.table(tb_df.T)
 
 elif page == "📝 Register Account":
     st.title("📝 Entity Registration Portal")
     with st.form("reg_form"):
-        st.text_input("Full Name / Organization")
-        # Added Financial Officer to registration options
+        org_name = st.text_input("Full Name / Organization Name")
         role = st.selectbox("Role to Register", ["Hospital", "Supplier", "Financial Officer"])
-        if st.form_submit_button("Submit Registration to Admin"):
-            record_on_chain(ADMIN_ADDR)
-            st.success(f"Request for {role} submitted.")
+        if st.form_submit_button("Submit Registration to Ledger"):
+            # This string is what appears on Etherscan
+            on_chain_data = f"REGISTRATION: {role} | NAME: {org_name}"
+            record_on_chain(ADMIN_ADDR, data_note=on_chain_data)
+            st.success(f"Proof of Registration for {org_name} sent to blockchain.")
 
 elif page == "🛠️ Admin Approvals":
-    st.title("🛠️ Admin: Confirm New Entities")
-    target = st.text_input("Wallet Address to Verify")
-    if st.button("Authorize on Blockchain"):
-        record_on_chain(target)
+    st.title("🛠️ Admin: Role Verification")
+    target = st.text_input("Wallet Address to Authorize")
+    if st.button("Finalize On-Chain Access"):
+        record_on_chain(target, data_note="ADMIN: Access Granted")
 
 elif page == "📑 Invoice Verification":
     st.title("📑 Financial Officer: Verify Invoices")
-    st.write("Professional review of supplier submissions.")
     st.table(pd.DataFrame({"ID": ["INV-001"], "From": ["MediCore"], "Amt": ["R12,000"], "Status": ["Pending"]}))
-    if st.button("Approve & Push to CEO"):
-        record_on_chain(CEO_ADDR)
+    if st.button("Push to CEO"):
+        record_on_chain(CEO_ADDR, data_note="FIN_OFFICER: Verified Invoice #001")
 
 elif page == "💰 Financial Oversight":
     st.title("💰 CEO: Authorization")
-    if st.button("Settle Payments"):
-        record_on_chain(ADMIN_ADDR)
+    if st.button("Authorize Final Settlement"):
+        record_on_chain(ADMIN_ADDR, data_note="CEO: Payment Authorized")
 
 elif page == "🏥 Hospital Stock":
     st.title("🏥 Hospital: Inventory")
     st.table(pd.DataFrame({"Medicine": ["ARVs", "Insulin"], "Level": [45, 12]}))
-    st.button("Scan Out")
+    if st.button("Scan Out"):
+        record_on_chain(ADMIN_ADDR, data_note="HOSPITAL: Item Scanned Out")
 
 elif page == "📤 Send Invoice":
     st.title("📤 Supplier: Invoice Generation")
-    if st.button("Send to Financial Officer"):
-        record_on_chain(FIN_OFFICER_ADDR)
+    if st.button("Submit to Finance"):
+        record_on_chain(FIN_OFFICER_ADDR, data_note="SUPPLIER: New Invoice Submitted")
 
 elif page == "💳 Subscriptions":
     st.title("💳 Supplier Subscriptions")
-    st.metric("Annual Plan", "R5,400", "-10% Applied")
-    st.button("Pay Now")
+    st.metric("Annual Plan", "R5,400")
+    if st.button("Pay Subscription"):
+        record_on_chain(ADMIN_ADDR, data_note="SUPPLIER: Subscription Paid")
 
 # --- FOOTER ---
 st.markdown("---")
-st.caption("Eco-Chain Solutions | Version 14.9 | Johannesburg Hub")
+st.caption("Eco-Chain Solutions | Version 15.0 | Permanent Decentralized Ledger")
